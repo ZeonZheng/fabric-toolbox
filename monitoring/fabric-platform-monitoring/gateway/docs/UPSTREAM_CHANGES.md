@@ -1,44 +1,99 @@
-# Fork changes and upstream comparison
+# Gateway Monitoring｜与官方实现的差异记录
 
-**Scope:** only \`monitoring/fabric-platform-monitoring/gateway/\`. The existing project \`README.md\`, Capacity, Inventory, Activity Events, and Fabric deployment artifacts are unchanged.
+> **对照基线：** [Microsoft Fabric Toolbox（Gateway PowerShell）](https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring/gateway) 和 [Jumpstart Gateway Setup Notebook v0.2.3](https://github.com/ecotte/fabric-platform-monitoring/blob/v0.2.3/gateway-monitoring/src/fabric-platform-monitoring/setup/Gateway%20Monitoring%20Setup.Notebook/notebook-content.py)。  
+> **范围：** 仅当前 fork 的 `monitoring/fabric-platform-monitoring/gateway/`。原有项目 `README.md`、Fabric Report/Semantic Model/KQL、Capacity、Inventory 等均未改动。
 
-## Revisions and provenance
+[返回总览](../POC_README.md) · [POC 状态](POC_STATUS.md) · [复现步骤](DEPLOYMENT_RUNBOOK.md)
 
-| Artifact | Reference | What changed | Verified? |
+## 先看变更矩阵
+
+| 文件 / 配置 | 官方原始行为 | 本次记录或修复 | 验证状态 |
 | --- | --- | --- | --- |
-| \`poc-notebooks/Gateway Monitoring Setup.ipynb\` | [Jumpstart v0.2.3 original source](https://github.com/ecotte/fabric-platform-monitoring/blob/v0.2.3/gateway-monitoring/src/fabric-platform-monitoring/setup/Gateway%20Monitoring%20Setup.Notebook/notebook-content.py) | Uploaded local notebook replaced \`fab\` subprocess commands with \`requests\` against Fabric REST; ID resolution by actual Eventstream display name; selection of unique \`CustomEndpoint\`, HTTP status check, auth host restriction, pagination and explicit JSON errors; writes \`builtin/config.json\` using \`notebookutils.nbResPath\` | REST approach used in POC, but sanitized committed notebook has **not been rerun** |
-| Same Setup notebook — fork hardening | Uploaded user notebook | Removes remaining \`sempy.fabric\` import (previously caused \`NoAvailableProvider\`) using \`notebookutils.runtime.context["currentWorkspaceId"]\`; adds correctly spelled \`ServicePrincipal.TenantId\` in addition to legacy \`TennatId\`; changes illustrative poll intervals from **1/5** to **30/60 sec**; comments out unused CLI installation step | **New edits — require revalidation** |
-| \`poc-notebooks/Jumpstart Installer - Gateway Monitoring.ipynb\` | [Jumpstart install instructions](https://jumpstart.fabric.microsoft.com/catalog/fpm-gateway-monitoring/) | Preserves the uploaded \`jumpstart.install("fpm-gateway-monitoring")\` and optional \`update_existing=True\` retry command; replaces hardcoded Workspace ID with placeholder and clarifies overwrite risk | Original uploaded notebook included failed/conflicting installer executions; sanitized archive is **not a successful deployment test** |
-| \`PowerShellScript/Run-GatewayHeartbeat.ps1\` | [Official toolbox main](https://github.com/microsoft/fabric-toolbox/blob/main/monitoring/fabric-platform-monitoring/gateway/PowerShellScript/Run-GatewayHeartbeat.ps1) | **One-line fix:** \`Add-MsgEventHub -msg $body\` → \`-msg $msg\`, matching \`$msg = $processMsg | ConvertTo-Json\` | **Locally validated:** HTTP 201, KQL heartbeats |
-| \`PowerShellScript/Setup-UpdateConfiguration.ps1\` | Official toolbox main | **Not modified in fork.** The local workflow used the stock script, and corrected its input and resulting config. | Used successfully on test VM |
-| \`PowerShellScript/Get-DataGatewayInfo.ps1\` | Official toolbox main | **Not modified in fork**; uses \`ServicePrincipal.TenantId\` from config; Gateway SPN admin role was added | GET APIs and Eventhouse metadata verified |
-| \`PowerShellScript/Run-UploadGatewayLogs.ps1\`, \`modules/*.psm1\` | Official toolbox main | **Not modified**; used against copied logs via an isolated POC config | Static-copy ingest proven, unattended active-file collection **not proven** |
-| Task Scheduler XML | Official toolbox main | **Not modified in Git.** Equivalent tasks created manually with corrected paths, 30/60-second config and appropriate run settings | Heartbeat + NodeInfo validated; UploadLogs disabled |
+| **Gateway Monitoring Setup.ipynb** | `fab` CLI 查询 Item、Topology、Connection | 上传的本地版本改用 Fabric REST、显式 HTTP/JSON 检查、校验 CustomEndpoint；fork 再做兼容性修复 | 🟡 旧适配路线用于 POC；**最终提交版待重测** |
+| **Jumpstart Installer.ipynb** | 通过 `fabric_jumpstart.install(...)` 安装 | 保留本地安装/更新示例，清理历史执行输出，`update_existing=True` 默认注释 | 🟡 仅作为施工记录，不能视为安装成功证明 |
+| **Run-GatewayHeartbeat.ps1** | 生成 `$msg`，但发送 `$body` | **只改一行：** `$body` → `$msg` | ✅ HTTP 201 / KQL 验证 |
+| **Setup-UpdateConfiguration.ps1** | 交互设置路径、Gateway ID、加密 Secret | **源文件未改动**；只使用正确粘贴方式和运行时配置 | ✅ |
+| **Get-DataGatewayInfo.ps1** | 读取 `ServicePrincipal.TenantId`；通过 API 获取 NodeInfo | **源文件未改动**；补 SPN 的 Gateway Cluster Admin | ✅ |
+| **Run-UploadGatewayLogs.ps1 / modules/*.psm1** | 匹配 `*Report_*.log`，`Move-Item` 到 Temp，上传后归档 | **源文件未改动**；通过 `Config.poc.json` 仅处理副本 | ✅ 静态副本；❌ 活动源文件 |
+| **TaskSchedulers/*.xml** | 仓库附带 Scheduled Task 模板 | **未修改/未直接导入 XML**；在 VM 手工建任务、修正路径 | ✅ Heartbeat / NodeInfo，UploadLogs Disabled |
 
-## Functional delta: uploaded Setup notebook vs Jumpstart
+## 1. Setup Notebook 的核心差异
 
-- Original: \`%pip install ms-fabric-cli\`, \`fab get\`, \`fab api\`; CLI textual errors were often suppressed with \`silently_continue=True\`, followed by \`json.loads\` on non-JSON output.
-- Uploaded revision: direct Fabric REST with existing notebook user's \`pbi\` token, \`GET /workspaces/{id}/items\`, \`/eventstreams/{id}/topology\`, \`/sources/{sourceId}/connection\`; no \`fab\` CLI runtime requirement in the main setup code.
-- Uploaded revision: requires exactly one CustomEndpoint source and unambiguous Eventstream names instead of selecting \`sources[0]\`.
-- Uploaded revision: checks HTTP error codes and parses direct JSON response (no CLI \`text\` envelope); does not print Event Hub access keys.
-- Fork-only hardening beyond the uploaded revision: runtime-context workspace ID, dual \`TenantId\`/\`TennatId\` keys, 30/60-second example values, and removal of execution outputs.
+### A. 原版 `fab` CLI → 直接 Fabric REST
 
-**Important:** the precise original installer code is distributed by the \`fabric-jumpstart\` package. The supplied Installer Notebook is a usage/retry record, **not** an upstream code patch. We do not attribute deployment success to its captured executions.
+**原版关键路径：**
 
-## Runtime-only adjustments (not checked into Git)
+```python
+result = subprocess.run(["fab", "-c", command], capture_output=True, text=True)
+heartbeat_conn_id = json.loads(
+    run_fab_command(f"api workspaces/{workspace_id}/eventstreams/{heartbeat_id}/topology",
+                    capture_output=True, silently_continue=True)
+).get("text", {}).get("sources", [])[0].get("id")
+```
 
-- Target gateway log location was discovered under the **service account's local profile**, not the hard-coded PBIEgwService default.
-- The generated config initially had \`TennatId\` but \`Get-DataGatewayInfo.ps1\` required \`TenantId\`. In the original POC this was fixed with \`Add-Member\` in \`Config.json\`.
-- \`SecretText\` was encrypted by \`ConvertTo-SecureWithMachineKey\`; the encrypted ciphertext was verified against the original secret **without printing it**.
-- Service principal was added as the **target Gateway Cluster Admin** after API returned zero gateways; result then showed one cluster/node.
-- Semantic Model \`KustoURL\` / \`KustoDB\` parameters and **Edit credentials** were corrected through Fabric UI.
-- Task Scheduler action split correctly into \`pwsh.exe\`, arguments, and unquoted \`Start in\`; XML templates were not directly imported.
-- Runtime \`Config.poc.json\` pointed to copied logs. It was **never committed**, as it includes credentials.
+问题：`fab` 调用失败后，隐藏错误信息或拿到非 JSON 字符串，紧接着 `json.loads` 就会抛 `JSONDecodeError`。此外，直接取 `sources[0]` 无法保证取到的是需要的 CustomEndpoint。
 
-## Known divergences / review points
+**上传的本地改版：** 使用 Notebook 的 Fabric 访问令牌，调用 Fabric REST 的 workspace items、Eventstream topology 与 source connection；遇到非成功 HTTP 状态直接报错；按实际名称和 `CustomEndpoint` 类型选择需要的 Source，避免默默选错。
 
-- The Setup Notebook still contains the upstream \`TenatId\` Python variable and \`TennatId\` JSON property for backward compatibility. Verify downstream requirements before removing either.
-- Setup notebook's \`x-ms-fabric-skill\` header was retained from the supplied revision; confirm whether it is needed with current Fabric REST versions.
-- Direct REST calls and notebook runtime context must be re-tested on the target workspace/tenant after restoring sanitized placeholders.
-- Re-running Jumpstart with \`update_existing=True\` can overwrite Fabric items and custom changes.
-- The official README's description of "tail" should not be interpreted as byte-offset incremental reading: current PowerShell Uploader operates at **file level** and calls \`Move-Item\`.
+### B. fork 再做的“补充修正”（未重测）
+
+- 移除残留的 `import sempy.fabric as fabric`，避免触发曾遇到的 `NoAvailableProvider`；改用：
+
+```python
+workspace_id = notebookutils.runtime.context["currentWorkspaceId"]
+```
+
+- 原始 Notebook 配置曾使用 `TenatId` 变量 / `TennatId` JSON 字段，但 PowerShell NodeInfo 读取 `TenantId`。fork **保留旧字段并额外增加正确的字段**：
+
+```python
+"ServicePrincipal": {
+    "TennatId": TenatId,  # 兼容原始生成结果
+    "TenantId": TenatId,  # 下游 PowerShell 使用
+    "AppId": AppId,
+    "SecretText": ""
+}
+```
+
+- Notebook 示例中的轮询默认值：Heartbeat `1 → 30` 秒；Report polling `5 → 60` 秒。
+- 清除全部执行输出、写入占位值；不在 Git 存储目标 Workspace ID、Connection Strings 或 Secret。
+
+**注意：** 最终提交的这两份 Notebook 没有再在真实 Fabric Workspace 中重跑；需要下一次在新目标环境验证，而不能把代码审阅视为部署成功。
+
+## 2. Heartbeat 的唯一已验证源码修复
+
+**官方代码：**
+
+```powershell
+$msg = $processMsg | ConvertTo-Json
+Add-MsgEventHub -msg $body -connectionType "Heartbeat" -config $config
+```
+
+**本地修复：**
+
+```powershell
+$msg = $processMsg | ConvertTo-Json
+Add-MsgEventHub -msg $msg -connectionType "Heartbeat" -config $config
+```
+
+这个修改在实际 Gateway VM 上已经通过 HTTP 201、Eventhouse `GatewaysHeartbeat` 和 Scheduled Task 运行验证。
+
+## 3. 仅发生在部署环境中的修改（不进 Git）
+
+| 修改 | 理由 |
+| --- | --- |
+| `Config.json` 的 `GatewayLogsPath` | 实际服务账号目录，而不是默认 PBIEgwService |
+| `Config.json` 的 `TenantId` | 与旧 Notebook 的 `TennatId` 拼写兼容 |
+| `SecretText` 加密值 | 本机 DPAPI 生成，不能随代码版本管理 |
+| SPN 加入目标 Gateway Cluster Admin | 否则可以发送 Metadata，但关键字段为空 |
+| `KustoURL`、`KustoDB` 和 **Edit credentials** | 预制 Semantic Model 需要连接实际 KQL Database |
+| Task Scheduler Action、执行账号、频率 | Windows 路径带空格，且需要作为后台任务持续运行 |
+| `Config.poc.json`、`poc-input`、`Temp`、`History` | 仅静态副本测试的运行时文件，**不应进入 Git** |
+
+## 4. 与原始仓库的边界
+
+- 没有把未完成的 Tail Collector 当作已经实施的代码。
+- 没有把经讨论的 Kafka、Fluent Bit、Vector、C# Worker 等方案描述为已经选型或部署。
+- 没有改动原始 `README.md`、Capacity Events / Activity Events / Inventory 或其他模块。
+- 未来 Jumpstart `update_existing=True` 可能覆盖 Fabric 托管 Items；应先评估差异和备份，再决定是否执行。
+
+**重新实施时先读：** [Runbook](DEPLOYMENT_RUNBOOK.md)，遇到错误再看 [Troubleshooting](TROUBLESHOOTING.md)；若要把 fork 变更回合并或向上游贡献，使用本页核对真实 diff。

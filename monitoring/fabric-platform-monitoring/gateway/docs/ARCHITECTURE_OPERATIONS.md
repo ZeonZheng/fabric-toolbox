@@ -1,116 +1,157 @@
-# Gateway Monitoring — architecture, log lifecycle, and production decisions
+# Gateway Monitoring｜架构、日志生命周期与后续技术决策
 
-## 1. Verified Fabric data path
+> **核心决策：当前先保留已验证的 Fabric 端 + Heartbeat / NodeInfo，暂停原始 Uploader 对活动 Gateway 日志的持续运行。**  
+> 后续重点不是重做 Report，而是验证一个**不会影响 Gateway 原始日志**的采集方案。
 
-The POC validated this flow:
+[返回总览](../POC_README.md) · [部署指南](DEPLOYMENT_RUNBOOK.md) · [现状与 Backlog](POC_STATUS.md)
 
-\`\`\`text
-Gateway VM
-  ├─ Get-DataGatewayInfo.ps1 (manual + scheduled)
-  ├─ Run-GatewayHeartbeat.ps1 (continuous, ~30 s)
-  └─ Run-UploadGatewayLogs.ps1 (manually on static COPIES only)
-        ├─ GatewayMonitoringHeartbeat.Eventstream
-        └─ GatewayMonitoringReports.Eventstream
-           ↓
-Fabric Platform Monitoring.Eventhouse / Gateway Monitoring KQL Database
-  ├─ GatewaysHeartbeat → GatewayNodeStatusWithInfo
-  └─ GatewayReports-Raw → parsed performance tables and query functions
-           ↓
-Gateway Monitoring Semantic Model (DirectQuery) → Power BI Report
-\`\`\`
+## 1. 已验证的架构与边界
 
-See the [editable Draw.io diagram](Gateway-Monitoring-POC.drawio), [official Jumpstart diagram](https://jumpstart.fabric.microsoft.com/images/diagrams/fpm-gateway-monitoring_light.svg), and [existing toolbox data-logic image](../../Images/05%20-%20Gateway%20Report%20Data%20Logic.png).
+- [可编辑的 POC Draw.io 架构图](Gateway-Monitoring-POC.drawio)（绿色：已验证；橙色：禁用/待验证；虚线：候选方案）
+- [Fabric Jumpstart 部署介绍](https://jumpstart.fabric.microsoft.com/catalog/fpm-gateway-monitoring/)
+- [原 Toolbox 数据流示意图](../../Images/05%20-%20Gateway%20Report%20Data%20Logic.png)
 
-**Verified:** Gateway metadata, heartbeat, System Counters, Jobs/Queries from historical samples, Report credentials and KQL. **Not verified:** Running Jobs / drillthrough / continuous producer / multi-node.
+```text
+On-premises Gateway VM
+  │
+  ├─ Get-DataGatewayInfo.ps1 ────> GatewayMonitoringReports.Eventstream
+  ├─ Run-GatewayHeartbeat.ps1 ───> GatewayMonitoringHeartbeat.Eventstream
+  └─ Run-UploadGatewayLogs.ps1 ──> GatewayMonitoringReports.Eventstream
+       （仅对静态日志副本完成测试）
+                                         │
+                                         ▼
+                               Fabric Eventhouse / KQL
+                                         │
+                                         ▼
+                              Gateway Semantic Model
+                                         │
+                                         ▼
+                              Power BI Gateway Monitor
+```
 
-## 2. All Gateway Performance Report types and selection
+**真正投入后台的只有 Heartbeat（30 秒）和 NodeInfo（开机/每周）任务。** UploadLogs 创建过 Task，但基于文件安全考虑已 **Disabled**。
 
-Original \`UploadGatewayLogs.psm1\` scans **recursively** for \`*Report_*.log\` excluding \`*_f.log\`. These eight types were observed in the POC source directory:
+## 2. 为什么原始 Uploader 不适合作为“只读 Tail”？
 
-| Report | Meaning / possible analysis |
+源码：[UploadGatewayLogs.psm1](https://github.com/microsoft/fabric-toolbox/blob/main/monitoring/fabric-platform-monitoring/gateway/PowerShellScript/modules/UploadGatewayLogs.psm1) · [Utils.psm1](https://github.com/microsoft/fabric-toolbox/blob/main/monitoring/fabric-platform-monitoring/gateway/PowerShellScript/modules/Utils.psm1)
+
+### 2.1 Uploader 扫描哪些文件？
+
+它不是只处理 `QueryStartReport`。原始筛选概念上是：
+
+```powershell
+Get-ChildItem -File -Path "$path\*Report_*.log" -Exclude "*_f.log" -Recurse
+```
+
+POC 的真实 Gateway `Report` 目录发现以下八类日志：
+
+| 类别 | 主要内容 |
 | --- | --- |
-| QueryStartReport | Start metadata, request tracking, data source, potentially query text |
-| QueryExecutionReport | Completion, duration, success/error |
-| QueryExecutionAggregationReport | Aggregated query processing |
-| SystemCounterAggregationReport | CPU, memory, system counters |
-| MashupEvaluationReport | Mashup evaluation activity |
-| ConcurrentOperationAggregationReport | Concurrent operation metrics |
-| OpenConnectionReport | Connection activity |
-| QueryStreamingReport | Query streaming |
+| QueryStartReport | 查询开始、跟踪 ID、数据源、可能包含 QueryText |
+| QueryExecutionReport | 执行结束、Duration、结果、Error |
+| QueryExecutionAggregationReport | 查询聚合指标 |
+| SystemCounterAggregationReport | CPU、Memory / System Counters |
+| MashupEvaluationReport | Mashup 引擎活动 |
+| ConcurrentOperationAggregationReport | 并发运行统计 |
+| OpenConnectionReport | 数据连接活动 |
+| QueryStreamingReport | 查询数据流统计 |
 
-The Uploader attempts to send **all matching reports** when \`EventHubs.UploadReports\` is true, whether or not the stock Power BI report visualizes each type. Ordinary service verbose logs such as \`GatewayErrors*.log\` are a **separate** optional Lakehouse path when \`Lakehouse.UploadLogs\` is enabled.
+上传配置打开时，**所有符合文件名条件的报告都可能被处理**；并不等于每类都在 Power BI Report 中有独立页面。普通 Gateway `GatewayErrors*.log` 等服务日志由另一条 Lakehouse UploadLogs 可选流程负责。
 
-## 3. Why direct \`Move-Item\` is not approved yet
+### 2.2 它具体把文件放在哪里？
 
-Source code: [UploadGatewayLogs.psm1](https://github.com/microsoft/fabric-toolbox/blob/main/monitoring/fabric-platform-monitoring/gateway/PowerShellScript/modules/UploadGatewayLogs.psm1), [Utils.psm1](https://github.com/microsoft/fabric-toolbox/blob/main/monitoring/fabric-platform-monitoring/gateway/PowerShellScript/modules/Utils.psm1).
+原 Uploader 操作的是文件：
 
-Current behavior for a matching report:
+```text
+<Gateway Log Root>\Report\*Report_*.log
+         │
+         │ Move-Item（不是 Copy-Item）
+         ▼
+<Gateway Log Root>\Report\Temp\*_x.log
+         │
+         │ Import-Csv → JSON 分批 → Eventstream HTTP POST
+         ▼
+<Gateway Log Root>\Report\History\*_f.log
+         └─ 合并归档、清理 Temp；旧 History 按保留策略清理
+```
 
-1. \`Move-Item\` source CSV to its sibling \`Report\Temp\*_x.log\` (does not make a copy).
-2. \`Add-LogToEventHub\` reads CSV, batches up to ~2000 rows and reduces payload near 980 KiB, then submits via Event Hubs-compatible HTTP REST.
-3. \`Merge-ReportFiles\` appends to \`Report\History\*_f.log\`, then deletes the processed intermediate file.
-4. \`Remove-OldReportFiles\` removes matching old local history based on \`ReportRetention\` (default 10 days). Cleanup is triggered during processing; it is **not** a strict wall-clock purge service.
+**POC 历史副本测试的位置：**
 
-The POC used \`D:\Ang\FabricGatewayMonitoring\poc-input\Report\Temp\` and \`...\History\`, so the real Gateway source was unaffected.
+```text
+D:\Ang\FabricGatewayMonitoring\poc-input\Report\
+├── Temp\
+└── History\
+```
 
-### Evidence of active append
+**真实 Gateway Source 路径（示例，仅为 POC VM）：**
 
-On **12 Nov 2026** filenames still contained \`20261019T110120\` while their sizes grew over repeated five-minute snapshots:
+```text
+C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
+```
 
-| Report | First → last bytes | Delta |
-| --- | --- | ---: |
-| SystemCounterAggregationReport | 6,668,473 → 6,670,766 | +2,293 |
-| QueryExecutionAggregationReport | 561,365 → 563,900 | +2,535 |
-| ConcurrentOperationAggregationReport | 374,348 → 374,568 | +220 |
-| QueryStartReport | 4,482,959 → 4,482,959 | 0 during sample |
+原脚本不是在自定义 `D:\Ang\FabricGatewayMonitoring\logs` 目录内归档；后者主要用于脚本报错日志。
 
-This **proves the same named files are actively appended**. It does **not** prove what happens if an external process renames/moves an open file. An open-handle \`Move-Item\` may fail or affect subsequent logging; Gateway rotation/recreation after an external move has **not been tested**, so no one should assume a new daily file automatically appears. Gateway-side file size/count settings explain regular rotation but not behavior under an external move.
+### 2.3 Retention 的定义不要混淆
 
-### Retention caveats
+| 配置 | 实际含义 |
+| --- | --- |
+| Gateway 的 `ReportFileSizeInBytes` | Gateway 自己的性能日志大小轮转设置（POC 约 100 MiB） |
+| Gateway 的 `ReportFileCount` | Gateway 自己的每类日志文件数（POC 为 10） |
+| Uploader 的 `ReportRetention = 10` | 本地 `History` 归档约 10 天的清理策略；清理触发于处理流程，不等于独立每日任务 |
+| Eventhouse Retention | **单独配置**；与前两个值无直接继承关系 |
 
-- The gateway config had \`ReportFileCount=10\` and \`ReportFileSizeInBytes=104857600\` (~100 MiB).
-- \`ReportRetention=10\` applies to **local uploader History**, not Fabric Eventhouse retention or original Gateway retention.
-- An Eventstream HTTP **201** confirms acceptance, not end-to-end exactly-once. Partial batch submission and retry can create duplicate rows; the original uploader is not a full transactional ingestion system.
+## 3. 直接证据：Gateway 真的在长期追加写同名文件
 
-## 4. Candidate collection designs (none implemented yet)
+2026-11-12 实测：`SystemCounterAggregationReport_RNGVMC0046_20261019T110120.log` 由 **6,668,473 → 6,670,766 bytes**；另有 QueryExecutionAggregation、ConcurrentOperationAggregation 文件增长。同名文件在 10 月 19 日起始，但 11 月 12 日仍更新。
 
-| Approach | Pros | Limitations / decision |
+**结论：** 不能假设这些 `*Report_*.log` 是已经关闭的静态日志，或 Gateway 每天都会创建新日期文件。若外部 `Move-Item` 把活动文件搬走：
+
+- 可能因文件被锁定而失败；
+- 也可能遇到继续写入旧句柄、重建、延迟轮转等行为；
+- **当前没有测试证明 Gateway 一定会自动生成新文件，也没有证明日志写入完全不受影响**。
+
+因此，目前禁止把原始 Uploader 的 `Config.json` 直接指向实时源文件并启用 24×7 Task Scheduler。
+
+## 4. 候选技术路线（讨论过，但均未实施）
+
+| 技术路线 | 优点 | 仍需验证 / 不足 |
 | --- | --- | --- |
-| Original file-level Uploader | Already proven on static copies, lowest code cost | Moves live source files; **not approved** pending lock/rotation/recovery validation |
-| Copy full files periodically | Small script | Re-uploads previously seen rows and wastes capacity; **not recommended** |
-| PowerShell or C# read-only tail with checkpoint | No source mutation, uses HTTPS 443 direct REST | Must implement CSV quoted multiline framing, byte offsets, file identity, recovery, batch commit, secure auth; POC required |
-| Fluent Bit / Vector / OpenTelemetry Filelog | Mature file tail and checkpoints | Verify multi-line quoted CSV records, Windows file sharing, exact Eventstream message envelope, 443 auth, idempotency |
-| Azure Monitor Agent / enterprise logs platform | May fit existing company-wide operations | Additional infrastructure, cost and Fabric schema adaptation |
-| Kafka broker | Durable message intermediary | Does **not** read Gateway files; adds infra/ports. Not justified solely for this use case |
+| **原始 Uploader 直接 Move** | 代码最少；静态副本 POC 已成功 | 活动文件移动安全性、锁定、故障恢复，**不建议直接生产** |
+| 周期性 `Copy-Item` 整份文件 | 简单 | Gateway 文件持续追加，会反复上传旧记录；**不建议** |
+| **Read-only Tail + Checkpoint**（PowerShell/C#） | 源目录只读、准确增量、REST 443 | 需要处理 CSV 跨行、字节偏移、文件身份、轮转、断点、重试、去重 |
+| Fluent Bit / Vector / OpenTelemetry Collector | 文件 Tail 和 Checkpoint 更成熟 | 不意味着可以直接解析 Gateway 复杂 CSV 或原样接 Fabric 的 JSON Schema |
+| 已有企业级日志平台 | 可复用部署/安全/运维标准 | 先确认组织是否已部署，以及成本与接入方式 |
+| Kafka Broker | 提供消息流中转 | **不负责读取 Windows 文件**，引入额外端口/基础设施；目前没必要 |
 
-**Proposed technical gate, not a completed implementation:** read-only shared FileStream on the active reports → CSV logical-record parser (not newline splitting) → durable per-file offset/checkpoint → HTTP REST into existing Reports CustomEndpoint → KQL duplicate strategy. Checkpoint must advance **only after server acknowledgement**, accepting at-least-once behavior. A stable EventId added to the raw dynamic record is insufficient to ensure the stock parsed KQL tables or semantic model deduplicate; changes require separate testing.
+**优先评估顺序：** 组织现有日志平台 → Fluent Bit/Vector 等成熟 Agent 的实际可用性 → 轻量 C# Worker → 自研 PowerShell Collector。不要在未验证 CSV 和 Fabric 输出前就做技术承诺。
 
-Evaluate the existing corporate telemetry/logging platform before building another Windows service. For the tested corporate network, HTTPS/443 is confirmed; a Kafka TCP path should not be presumed available.
+### Read-only Tail 的设计验收点
 
-## 5. Scheduling and recovery design
+1. **FileStream shared read**：只读共享打开，允许 Gateway 持续写入；文件句柄共享模式需要 VM 实测。
+2. **CSV 完整逻辑记录**：不能只按换行拆记录（`QueryText` 可能引号包裹、跨行）；处理半写入记录和编码边界。
+3. **按文件 Byte Offset Checkpoint**：必须只在完整批次发送收到确认后推进。
+4. **轮转/截断检测**：通过稳定 File Identity（不能只用路径和日期）识别文件替换；不能静默丢弃旧 Checkpoint 的未确认记录。
+5. **HTTP REST Batch**：保持目前已验证的 `{ logType, logDate, log } ` 消息 Schema、发送大小限制及重试规则。
+6. **At-least-once / EventId**：HTTP 201 证明 Eventstream 接收，不保证 Exactly-once。即使给原始 dynamic JSON 添加 `EventId`，当前 KQL Parsed Tables 也**不会自动去重**；需要独立实现并测试。
+7. **运维**：独立 Collector 健康、磁盘 backlog、故障恢复、任务与身份、敏感数据与网络控制。
 
-- **Heartbeat:** 30 seconds; long-running PowerShell task at startup, no GUI console required, state \`Running\` is expected. One-minute KQL offline threshold means network jitter can create transient "offline" states; monitor false positives.
-- **NodeInfo:** at startup plus weekly; exits to Ready and last result 0.
-- **Report polling:** suggested **60 seconds**; current scheduler UploadLogs task **disabled**, because production tail/file safety is unresolved.
-- The toolbox XML templates contain legacy paths/SIDs and **72h \`ExecutionTimeLimit\`**. They are reference templates, not deploy-as-is production task definitions.
-- Monitor Task Scheduler History, last heartbeat in KQL, disk backlog, auth expiry, failed sends, duplicate rates and source-file retention.
-- A host reboot/VM failover must not silently reprocess the full file or lose unacknowledged bytes; this still needs an integration test.
+## 5. Task Scheduler 的长期运行要求
 
-## 6. Security and privacy
+| Task | 本次策略 | 原因 |
+| --- | --- | --- |
+| Gateway-Heartbeat | **Enabled**，30 秒，持续后台运行 | KQL `Responding` 已验证 |
+| Gateway-NodeInfo | **Enabled**，开机 + 每周执行一次 | Node 元数据变化频率低 |
+| Gateway-UploadLogs | **Disabled**（只做过测试） | 未确定安全的增量采集手段 |
 
-- \`config.json\` stores Eventstream Event Hub-compatible connection strings, potentially including **SAS credentials**; keep out of repo and limit file ACLs.
-- \`SecretText\` is Windows **LocalMachine DPAPI** encrypted, not plain text, but still sensitive and tied to the machine. Avoid copying encrypted blob across VMs; provision each host separately and rotate credentials through approved systems.
-- Gateways can log QueryText, connection paths, data source names, IDs, errors and potentially sensitive parameters. Review data classification and retention before uploading every type to a shared Eventhouse.
-- Give Scheduled Tasks the least privileges required to read their data and authenticate; separate interactive POC identities from long-term service identities.
-- Define Eventhouse/KQL table retention independently from local \`ReportRetention\`; evaluate Fabric capacity and DirectQuery refresh cost with more nodes.
+原 Toolbox XML 模板含旧机器 SID、旧绝对路径、`PT72H` 的执行时限，因此当前采用 Task Scheduler GUI 手动创建任务，并取消长任务时间限制。Windows 后台执行不需要打开 PowerShell 窗口；但必须定期监控 **KQL 最后心跳时间，而不是只看 Task State=Running**。
 
-## 7. Acceptance criteria before marking production-ready
+## 6. 安全和生产化 Checklist
 
-- Source reports untouched through long-running collection, including active writes, file rotation, truncation, and gateway restart.
-- All eight required CSV types parsed correctly, including quoted/multi-line data and partial UTF-8 writes.
-- Restart/network outage/retry/idempotency tests with counted events, bounded disk buffer and observable failures.
-- Service account permission review, secret rotation, governance and privacy review.
-- Multi-node cluster test; no report double counting; Report-specific visuals checked.
-- Task/collector health alerts and rollback procedure documented.
+- [ ] 原始日志内容/来源权限审查：QueryText、数据源 URL、错误详情可能含敏感信息。
+- [ ] 本地 `Config.json` 与 Eventstream SAS/Client Secret 仅存于授权 VM，不随 Git 分发；跨 VM 单独初始化 DPAPI。
+- [ ] 网关技术账户和 Scheduler 运行身份按最小权限部署；保护日志、checkpoint、归档 ACL。
+- [ ] 断网、Restart、半写入 CSV、源文件轮转、消息重发、去重、容量/成本都完成验收。
+- [ ] Eventhouse Retention、KQL Update Policy 和 Model 的多 Node 聚合准确性验证。
+- [ ] 定义企业监控告警、值班、失败重试和回滚方案。
 
-**Status:** these criteria are **open**, and this branch records technical decisions and POC results; it does not introduce an unvalidated collector or claim production readiness.
+**结论：** 当前 POC 的 **Fabric 后端与报表链路已验证**，真正的后续工作是 Gateway 原始日志的**安全持续采集**。本分支不含未经验证的生产 Collector。
