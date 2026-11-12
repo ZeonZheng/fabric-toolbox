@@ -1,0 +1,13 @@
+# Local Gateway Monitoring runtime state - never commit secrets/log content
+**/configs/Config.json
+**/configs/Config.*.json
+**/configs/state.json
+**/configs/checkpoint*.json
+**/logs/
+**/poc-input/
+**/History/
+**/Temp/
+**/builtin/config.json
+**/.ipynb_checkpoints/
+*.secret
+*.bak
