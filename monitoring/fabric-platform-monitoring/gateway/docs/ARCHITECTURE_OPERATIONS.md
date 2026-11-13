@@ -115,6 +115,9 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
 5. **两套独立大小管理：** Gateway `GatewayCore.dll.config` 设置 `ReportFileCount=10`、`ReportFileSizeInBytes=104857600`（100 MiB），控制原始日志；Uploader 的 History `100mb` 是 `Utils.psm1` 写死的本地合并条件，二者彼此独立。Gateway 文件名旧时间戳可持续沿用，不能作为事件时间。
 6. **多节点：** 官方按每个 Gateway VM 独立部署 uploader/本地 Report/Temp/History，正常部署时 History 不跨节点合并。若人为改为共享 History，代码未额外检查节点 ID，不能假定安全。
 7. **仍需验证：** 分批上传在部分成功后失败，可能重复；递归扫描包含 Temp，重试中对同一路径 Move 的行为尚未测试；History 归档成功也不证明 Eventhouse Parsed 与源端记录 exactly-once。
+8. **PROD 首次 Backfill 顺序并不按时间排序：** uploader 用 `Get-ChildItem ... -Recurse` 取得完整扫描列表，没有 `Sort-Object`；同一 uploader 进程的 `foreach` 串行完成每个文件的 Move → Upload（同步分批 POST）→ Merge，然后才处理下一个。不同 Gateway Node 的独立 uploader 则可以并行上传。不能保证旧文件先于新文件处理。
+9. **History 的日期是采集/归档日期，不是源事件日期：** `Merge-ReportFiles` 仅选择**当天创建且小于 100 MiB** 的同 Report Type `*_f.log`；旧日期创建的 History 通常不会再被追加，但今天首次回传的历史数据与今天新产生的数据完全可能被追加到**同一个今天创建的** History 文件。且当日有多个合格文件时取未排序的 `$packFiles[0]`，无法保证归档内容按事件时间顺序排列。正式分析应使用 CSV 事件时间，PROD 初始回传应按真实事件时间在独立 Staging 中筛选。
+
 
 ## 4. 当前原始 Uploader POC 与其他候选技术路线
 
