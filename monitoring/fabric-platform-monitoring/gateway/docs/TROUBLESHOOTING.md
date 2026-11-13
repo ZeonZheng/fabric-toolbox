@@ -186,4 +186,4 @@ Uploader 会拆分 CSV 成多批请求；处理完静态文件后持续轮询并
 
 ### Task Scheduler 文件路径与修改方式
 
-原任务在 `Task Scheduler Library\\FabricGatewayMonitoring\\Gateway-UploadLogs`，`TaskPath` 为 `\\FabricGatewayMonitoring\\`。使用 `Export-ScheduledTask -TaskName "Gateway-UploadLogs" -TaskPath "\\FabricGatewayMonitoring\\"` 才能正确定位并生成备份；仅指定 TaskName 曾报 `The system cannot find the file specified`。后台 Task 修改时 `Set-ScheduledTask` 报 `The user name or password is incorrect`，最终通过 GUI 中的 **Properties → Actions → Edit** 将参数切换到 `Config.live-poc.json` 并成功启动，不需要删除重建任务。
+原任务在 `Task Scheduler Library\FabricGatewayMonitoring\Gateway-UploadLogs`，`TaskPath` 为 `\FabricGatewayMonitoring\`。使用 `Export-ScheduledTask -TaskName "Gateway-UploadLogs" -TaskPath "\FabricGatewayMonitoring\"` 才能正确定位并生成备份；仅指定 TaskName 曾报 `The system cannot find the file specified`。后台 Task 修改时 `Set-ScheduledTask` 报 `The user name or password is incorrect`，最终通过 GUI 中的 **Properties → Actions → Edit** 将参数切换到 `Config.live-poc.json` 并成功启动，不需要删除重建任务。
