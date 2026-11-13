@@ -116,7 +116,7 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
 6. **多节点：** 官方按每个 Gateway VM 独立部署 uploader/本地 Report/Temp/History，正常部署时 History 不跨节点合并。若人为改为共享 History，代码未额外检查节点 ID，不能假定安全。
 7. **仍需验证：** 分批上传在部分成功后失败，可能重复；递归扫描包含 Temp，重试中对同一路径 Move 的行为尚未测试；History 归档成功也不证明 Eventhouse Parsed 与源端记录 exactly-once。
 
-## 4. 候选技术路线（讨论过，但均未实施）
+## 4. 当前原始 Uploader POC 与其他候选技术路线
 
 | 技术路线 | 优点 | 仍需验证 / 不足 |
 | --- | --- | --- |
