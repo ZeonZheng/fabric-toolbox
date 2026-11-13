@@ -14,8 +14,8 @@
 | **Run-GatewayHeartbeat.ps1** | 生成 `$msg`，但发送 `$body` | **只改一行：** `$body` → `$msg` | ✅ HTTP 201 / KQL 验证 |
 | **Setup-UpdateConfiguration.ps1** | 交互设置路径、Gateway ID、加密 Secret | **源文件未改动**；只使用正确粘贴方式和运行时配置 | ✅ |
 | **Get-DataGatewayInfo.ps1** | 读取 `ServicePrincipal.TenantId`；通过 API 获取 NodeInfo | **源文件未改动**；补 SPN 的 Gateway Cluster Admin | ✅ |
-| **Run-UploadGatewayLogs.ps1 / modules/*.psm1** | 匹配 `*Report_*.log`，`Move-Item` 到 Temp，上传后归档 | **源文件未改动**；通过 `Config.poc.json` 仅处理副本 | ✅ 静态副本；❌ 活动源文件 |
-| **TaskSchedulers/*.xml** | 仓库附带 Scheduled Task 模板 | **未修改/未直接导入 XML**；在 VM 手工建任务、修正路径 | ✅ Heartbeat / NodeInfo，UploadLogs Disabled |
+| **Run-UploadGatewayLogs.ps1 / modules/*.psm1** | 匹配 `*Report_*.log`，`Move-Item` 到 Temp，上传后归档 | **Git 源文件未改动**；原 `Config.poc.json` 处理静态副本；新私有 `Config.live-poc.json` 处理真实 POC Report | ✅ 静态副本；✅ 活动源文件首轮（8 类 / HTTP 201）；🟡 连续运行观察 |
+| **TaskSchedulers/*.xml** | 仓库附带 Scheduled Task 模板 | **Git XML 未改**；在 VM 修改任务 Action 至 `Config.live-poc.json`，保留原 Task；备份任务 XML 仅存 VM 本地 | ✅ 2026-11-13 Heartbeat Running、NodeInfo Ready、UploadLogs Running |
 
 ## 1. Setup Notebook 的核心差异
 
@@ -86,14 +86,16 @@ Add-MsgEventHub -msg $msg -connectionType "Heartbeat" -config $config
 | `SecretText` 加密值 | 本机 DPAPI 生成，不能随代码版本管理 |
 | SPN 加入目标 Gateway Cluster Admin | 否则可以发送 Metadata，但关键字段为空 |
 | `KustoURL`、`KustoDB` 和 **Edit credentials** | 预制 Semantic Model 需要连接实际 KQL Database |
-| Task Scheduler Action、执行账号、频率 | Windows 路径带空格，且需要作为后台任务持续运行 |
-| `Config.poc.json`、`poc-input`、`Temp`、`History` | 仅静态副本测试的运行时文件，**不应进入 Git** |
+| Task Scheduler Action、执行账号、频率 | 2026-11-13 通过 GUI 将 `Gateway-UploadLogs` 配置从 `Config.poc.json` 切换到 `Config.live-poc.json` 并运行；PowerShell `Set-ScheduledTask` 因现有凭据验证失败，未改动 Git 中 TaskScheduler XML |
+| `Config.poc.json`、`Config.live-poc.json`、`poc-input`、`Temp`、`History` | 静态副本与真实 POC 采集的**本机私有**运行时配置/数据，**不进入 Git** |
 
 ## 4. 与原始仓库的边界
 
-- 没有把未完成的 Tail Collector 当作已经实施的代码。
+- 没有把未完成的 Tail Collector 当作已经实施的代码；目前在 POC 上实际运行的是**原始 Move Uploader**，尚未证明长期稳定性。
 - 没有把经讨论的 Kafka、Fluent Bit、Vector、C# Worker 等方案描述为已经选型或部署。
 - 没有改动原始 `README.md`、Capacity Events / Activity Events / Inventory 或其他模块。
 - 未来 Jumpstart `update_existing=True` 可能覆盖 Fabric 托管 Items；应先评估差异和备份，再决定是否执行。
+
+**2026-11-13 新发现（仅部署时观察与记录，未改源码）：** 原 Uploader 的 History 合并发生在**上传之后**，按文件名前缀、当天创建、低于 100 MiB 选择本地归档文件；与 Gateway 自身的 100 MiB / 10 个源日志轮转独立。用户计划 POC 连续观察后，以独立 Staging 和事件时间 cutoff 测试 PROD 首次 Backfill，不直接上传所有生产历史日志。详见 [架构运维](ARCHITECTURE_OPERATIONS.md) 与 [状态记录](POC_STATUS.md)。
 
 **重新实施时先读：** [Runbook](DEPLOYMENT_RUNBOOK.md)，遇到错误再看 [Troubleshooting](TROUBLESHOOTING.md)；若要把 fork 变更回合并或向上游贡献，使用本页核对真实 diff。
