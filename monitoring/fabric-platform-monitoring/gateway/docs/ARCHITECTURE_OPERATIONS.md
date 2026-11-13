@@ -1,13 +1,13 @@
 # Gateway Monitoring｜架构、日志生命周期与后续技术决策
 
-> **核心决策：当前先保留已验证的 Fabric 端 + Heartbeat / NodeInfo，暂停原始 Uploader 对活动 Gateway 日志的持续运行。**  
-> 后续重点不是重做 Report，而是验证一个**不会影响 Gateway 原始日志**的采集方案。
+> **决策更新（2026-11-13）：** 已在 POC 单节点验证真实 Performance Logs Move 后自动重建并继续写入，原始 Uploader Task 已启动连续观察。**仍未经生产可靠性验收。**  
+> **下一步：** 验证多轮完整性、断网/部分上传后的恢复与资源开销；若原始 Uploader 不达标，再评估只读 Tail/Checkpoint 或企业日志平台。
 
 [返回总览](../POC_README.md) · [部署指南](DEPLOYMENT_RUNBOOK.md) · [现状与 Backlog](POC_STATUS.md)
 
 ## 1. 已验证的架构与边界
 
-- [可编辑的 POC Draw.io 架构图](Gateway-Monitoring-POC.drawio)（绿色：已验证；橙色：禁用/待验证；虚线：候选方案）
+- [可编辑的 POC Draw.io 架构图](Gateway-Monitoring-POC.drawio)（**2026-11-12 状态快照**；图中 UploadLogs Disabled 信息已过时，2026-11-13 状态请以下文为准）
 - [Fabric Jumpstart 部署介绍](https://jumpstart.fabric.microsoft.com/catalog/fpm-gateway-monitoring/)
 - [原 Toolbox 数据流示意图](../../Images/05%20-%20Gateway%20Report%20Data%20Logic.png)
 
@@ -17,7 +17,7 @@ On-premises Gateway VM
   ├─ Get-DataGatewayInfo.ps1 ────> GatewayMonitoringReports.Eventstream
   ├─ Run-GatewayHeartbeat.ps1 ───> GatewayMonitoringHeartbeat.Eventstream
   └─ Run-UploadGatewayLogs.ps1 ──> GatewayMonitoringReports.Eventstream
-       （仅对静态日志副本完成测试）
+       （POC 真实源文件已首轮验证，后台持续采集观察中）
                                          │
                                          ▼
                                Fabric Eventhouse / KQL
@@ -29,7 +29,7 @@ On-premises Gateway VM
                               Power BI Gateway Monitor
 ```
 
-**真正投入后台的只有 Heartbeat（30 秒）和 NodeInfo（开机/每周）任务。** UploadLogs 创建过 Task，但基于文件安全考虑已 **Disabled**。
+**2026-11-13 任务状态：** Heartbeat `Running`（30 秒）、NodeInfo `Ready`（At startup + weekly 的一次性任务）、UploadLogs `Running`（60 秒轮询，私有 `Config.live-poc.json`）。这不是持续数据完整性验收的替代证据。
 
 ## 2. 为什么原始 Uploader 不适合作为“只读 Tail”？
 
@@ -104,26 +104,30 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
 
 2026-11-12 实测：`SystemCounterAggregationReport_RNGVMC0046_20261019T110120.log` 由 **6,668,473 → 6,670,766 bytes**；另有 QueryExecutionAggregation、ConcurrentOperationAggregation 文件增长。同名文件在 10 月 19 日起始，但 11 月 12 日仍更新。
 
-**结论：** 不能假设这些 `*Report_*.log` 是已经关闭的静态日志，或 Gateway 每天都会创建新日期文件。若外部 `Move-Item` 把活动文件搬走：
+**2026-11-13 结果更新：** 在本台 POC Gateway 上，8 个活动日志被原始 Uploader 成功 Move，Eventstream 返回 HTTP 201；Gateway 之后重新创建同名 Performance Logs 并继续写入。文件名仍含旧的 `20261019T110120`，但物理创建时间为 2026-11-13。**仍不能证明无丢失/重复、跨机器行为一致或故障恢复可靠**。
 
-- 可能因文件被锁定而失败；
-- 也可能遇到继续写入旧句柄、重建、延迟轮转等行为；
-- **当前没有测试证明 Gateway 一定会自动生成新文件，也没有证明日志写入完全不受影响**。
+### Uploader 的上传与本地合并机制（源码核对）
 
-因此，目前禁止把原始 Uploader 的 `Config.json` 直接指向实时源文件并启用 24×7 Task Scheduler。
+1. 扫描匹配 `*Report_*.log`，排除 `*_f.log`，**不以 LastRun/LastWriteTime 增量过滤 Performance Report**。
+2. 对每个源文件先 `Move-Item` 至 `Report/Temp/*_x.log`，从 Temp 读取 CSV 并按消息大小分批 POST 至 Eventstream；响应为 HTTP 201 后继续处理。
+3. **上传在 Merge 之前**；`Merge-ReportFiles` 再将 Temp 中的 CSV 行追加至本地 `Report/History/*_f.log`，成功后删除 Temp；History 不是再次上传的源。
+4. “同类型”取文件名第一个 `_` 前的前缀（例如 `QueryStartReport` 和 `SystemCounterAggregationReport` 独立）。在 History 中找**当天创建、低于 100 MiB** 的 `$report*_f.log` 文件追加；找不到就在**同一个 History 文件夹**新建一个归档文件，**没有按天建子目录**。大小条件在追加前评估，追加后可能超过阈值。
+5. **两套独立大小管理：** Gateway `GatewayCore.dll.config` 设置 `ReportFileCount=10`、`ReportFileSizeInBytes=104857600`（100 MiB），控制原始日志；Uploader 的 History `100mb` 是 `Utils.psm1` 写死的本地合并条件，二者彼此独立。Gateway 文件名旧时间戳可持续沿用，不能作为事件时间。
+6. **多节点：** 官方按每个 Gateway VM 独立部署 uploader/本地 Report/Temp/History，正常部署时 History 不跨节点合并。若人为改为共享 History，代码未额外检查节点 ID，不能假定安全。
+7. **仍需验证：** 分批上传在部分成功后失败，可能重复；递归扫描包含 Temp，重试中对同一路径 Move 的行为尚未测试；History 归档成功也不证明 Eventhouse Parsed 与源端记录 exactly-once。
 
 ## 4. 候选技术路线（讨论过，但均未实施）
 
 | 技术路线 | 优点 | 仍需验证 / 不足 |
 | --- | --- | --- |
-| **原始 Uploader 直接 Move** | 代码最少；静态副本 POC 已成功 | 活动文件移动安全性、锁定、故障恢复，**不建议直接生产** |
+| **原始 Uploader 直接 Move** | 真实 POC 单节点已验证首轮 Move + 自动重新生成日志，并启动后台持续观察 | 多轮数据完整性、部分失败/重试恢复及 PROD 影响尚需验证；**未批准直接生产推广** |
 | 周期性 `Copy-Item` 整份文件 | 简单 | Gateway 文件持续追加，会反复上传旧记录；**不建议** |
 | **Read-only Tail + Checkpoint**（PowerShell/C#） | 源目录只读、准确增量、REST 443 | 需要处理 CSV 跨行、字节偏移、文件身份、轮转、断点、重试、去重 |
 | Fluent Bit / Vector / OpenTelemetry Collector | 文件 Tail 和 Checkpoint 更成熟 | 不意味着可以直接解析 Gateway 复杂 CSV 或原样接 Fabric 的 JSON Schema |
 | 已有企业级日志平台 | 可复用部署/安全/运维标准 | 先确认组织是否已部署，以及成本与接入方式 |
 | Kafka Broker | 提供消息流中转 | **不负责读取 Windows 文件**，引入额外端口/基础设施；目前没必要 |
 
-**优先评估顺序：** 组织现有日志平台 → Fluent Bit/Vector 等成熟 Agent 的实际可用性 → 轻量 C# Worker → 自研 PowerShell Collector。不要在未验证 CSV 和 Fabric 输出前就做技术承诺。
+**当前顺序：** 先验证原始 uploader 的 POC 连续运行；如果出现完整性/恢复问题，再评估组织现有日志平台 → Fluent Bit/Vector → C# Worker → PowerShell Tail。候选方案尚未投入。
 
 ### Read-only Tail 的设计验收点
 
@@ -141,9 +145,9 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
 | --- | --- | --- |
 | Gateway-Heartbeat | **Enabled**，30 秒，持续后台运行 | KQL `Responding` 已验证 |
 | Gateway-NodeInfo | **Enabled**，开机 + 每周执行一次 | Node 元数据变化频率低 |
-| Gateway-UploadLogs | **Disabled**（只做过测试） | 未确定安全的增量采集手段 |
+| Gateway-UploadLogs | **Enabled / Running（2026-11-13 POC）** | Action 改指向 `Config.live-poc.json`；仍在连续运行观察期 |
 
-原 Toolbox XML 模板含旧机器 SID、旧绝对路径、`PT72H` 的执行时限，因此当前采用 Task Scheduler GUI 手动创建任务，并取消长任务时间限制。Windows 后台执行不需要打开 PowerShell 窗口；但必须定期监控 **KQL 最后心跳时间，而不是只看 Task State=Running**。
+原 Toolbox XML 模板含旧机器 SID、旧绝对路径、`PT72H` 的执行时限，因此采用 Task Scheduler GUI 管理任务。2026-11-13 通过 GUI 更新 UploadLogs 的 Action（PowerShell `Set-ScheduledTask` 更新时遇到身份凭据错误），并启用。Windows 后台执行不需要打开 PowerShell 窗口；但必须定期监控 **KQL 最近 Heartbeat 与 Performance Logs、而非只看 Task State=Running**。
 
 ## 6. 安全和生产化 Checklist
 
@@ -154,4 +158,4 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
 - [ ] Eventhouse Retention、KQL Update Policy 和 Model 的多 Node 聚合准确性验证。
 - [ ] 定义企业监控告警、值班、失败重试和回滚方案。
 
-**结论：** 当前 POC 的 **Fabric 后端与报表链路已验证**，真正的后续工作是 Gateway 原始日志的**安全持续采集**。本分支不含未经验证的生产 Collector。
+**结论：** 原始 Uploader 已在 POC 首轮真实日志验证并开始持续运行，Fabric 后端与报表链路已有静态副本证据。当前必须核验连续性、异常恢复、端到端行数和 PROD 首次导入范围（使用独立 Staging，按事件时间而非文件名日期筛选）；不声明 Production Ready。
