@@ -1,8 +1,8 @@
 # Gateway Monitoring｜部署与续建 Runbook
 
 > **适用范围：** Windows On-premises Data Gateway（单 Node POC）。本指南将**操作、预期结果、常见错误**放在同一阶段。  
-> **已验证：** Metadata / Heartbeat / 历史日志副本上传 / Report / Heartbeat 与 NodeInfo 后台任务。  
-> **未验证：** 对真实活动日志的无人值守持续采集。最后一步 Uploader **保持 Disabled**。
+> **已验证：** Metadata / Heartbeat / 历史日志副本 / Report；2026-11-13 真实 POC 日志首次 Move → Eventstream → History，Gateway 重新创建文件继续写入。  
+> **进行中：** `Gateway-UploadLogs` 已切换 `Config.live-poc.json` 并 Running；多日连续性、失败恢复和 PROD 安全性未完成验收。
 
 [返回导航](../POC_README.md) · [故障速查](TROUBLESHOOTING.md) · [POC 验证数据](POC_STATUS.md)
 
@@ -15,10 +15,10 @@
 | 3 | Gateway VM 准备 PowerShell / 日志路径 | ✅ |
 | 4 | 初始化、加密并验证 SPN Secret | ✅ |
 | 5 | NodeInfo + Heartbeat 上传、KQL 验证 | ✅ |
-| 6 | Performance Logs **副本**上传 | ✅ |
+| 6 | 静态副本上传 + 8 类真实 POC 日志首次 Move | ✅ 首轮通过 |
 | 7 | Semantic Model + Credentials + Report | ✅ |
-| 8 | Task Scheduler 后台运行 | ✅ Heartbeat / NodeInfo；⏸️ Uploader Disabled |
-| 9 | 安全、连续的活动日志采集 | ❌ 后续工作 |
+| 8 | Task Scheduler 后台运行 | ✅ Heartbeat Running / NodeInfo Ready；🟡 UploadLogs Running（观察中） |
+| 9 | 长期连续性、失败恢复及 PROD 首次采集 | 🟡 后续验收 |
 
 ## Phase 1 — Fabric 端部署
 
@@ -85,7 +85,7 @@ jumpstart.install("fpm-gateway-monitoring")
 
 ### Step 1. 使用 PowerShell 7
 
-在 VM 中安装/确认 PowerShell 7（POC 实测为 7.6.9）。准备脚本时，保持模块目录与脚本同级：
+在 VM 中安装/确认 PowerShell 7（POC 于 2026-11-13 实测为 7.6.10）。准备脚本时，保持模块目录与脚本同级：
 
 ```text
 D:\Ang\FabricGatewayMonitoring\
@@ -118,7 +118,7 @@ Get-CimInstance Win32_Service |
     Select-Object Name, State, StartName
 ```
 
-读取 Gateway 安装目录下 `Microsoft.PowerBI.DataMovement.Pipeline.GatewayCore.dll.config` 的 `ReportFilePath`。其中 `%LOCALAPPDATA%` 对应 **Gateway Service Account** 的用户目录，不一定是默认的 `C:\Windows\ServiceProfiles\PBIEgwService`。
+POC Gateway **实际安装目录为 `D:\On-premises data gateway`**，读取其下 `Microsoft.PowerBI.DataMovement.Pipeline.GatewayCore.dll.config` 的 `ReportFilePath`。其中 `%LOCALAPPDATA%` 对应 **Gateway Service Account** 的用户目录，不一定是默认的 `C:\Windows\ServiceProfiles\PBIEgwService`。
 
 POC 中实测父目录：
 
@@ -130,7 +130,7 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway
     └── ...（共八种 Performance Report）
 ```
 
-**无需开启 Additional logging** 才能得到 Performance Report。脚本中的 `GatewayLogsPath` 应设置为 **Report 的父目录**；`D:\Ang\FabricGatewayMonitoring\logs` 是脚本自己的错误日志目录，不是输入源。
+**无需开启 Additional logging** 才能得到 Performance Report。原 Setup 可使用 `Report` 的父目录；**本次 `Config.live-poc.json` 已实测直接指向 `...\Report` 也可行**。`D:\Ang\FabricGatewayMonitoring\logs` 是脚本自己的错误日志目录，不是输入源。
 
 ## Phase 4 — 初始化 + Secret 验证
 
@@ -279,6 +279,17 @@ QueryExecutionReport
 
 本次四种类型的实际记录数见 [POC_STATUS.md](POC_STATUS.md)。这里证明**静态副本可以摄取并解析**，不代表连续采集对活动日志安全。
 
+## Phase 6B — 2026-11-13 真实活动日志 POC（首轮已通过）
+
+这是**单节点 POC** 实测，不允许直接复制到 PROD 作为风险验收：
+
+1. 测试前将真实 `Report` 目录下 **8 类日志**复制至 `D:\Ang\GatewayLogs-Backup-BeforeMove`，另存 `before.csv` 记录文件状态；保留静态副本的原有 `Config.poc.json`。
+2. 基于原 POC 配置另存 **私有** `configs/Config.live-poc.json`。关键实测参数为 `GatewayLogsPath = ["C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report"]`（**直接指向 Report**），`ReportSendInterval=60`、`ReportRetention=3650`（仅 POC 暂存）、`EventHubs.UploadReports=true`，两项 Lakehouse 上传设为 false。
+3. 手动执行 `./Run-UploadGatewayLogs.ps1 -configFilePath "./configs/Config.live-poc.json"`。首轮查到 **8 个**文件，依次执行 **Move to Temp → CSV 分批上传 HTTP 201 → Merge 到 History → 删除 Temp**；日志最终在 `Report/History` 中按类型归档。手动停止持续循环以便查看文件。
+4. Gateway 此后重新创建 8 个同名原始 Performance Logs 并继续写入；旧名称里的 `20261019T110120` 不等于新文件的物理创建日期。**HTTP 201 与重新创建文件已验证，不代表真实批次在 Eventhouse 没有重复/遗漏**。
+
+**归档区分：** Gateway 自身轮转配置 `ReportFileCount=10`、`ReportFileSizeInBytes=104857600`（100 MiB）；Uploader 的 `Merge-ReportFiles` 另在同一 `History` 目录下按 Report Type（文件名第一个下划线前的部分）、当天创建、`<100mb` 追加；不满足条件时在 History 根目录创建新 `*_f.log`，不是创建按天子目录。Uploader 不再次上传 History 文件。
+
 ## Phase 7 — 让 Power BI Report 正常读数据
 
 这是容易遗漏的一步，**仅修改 Parameters 不够，还要 Edit credentials**：
@@ -305,7 +316,7 @@ QueryExecutionReport
 | --- | --- | --- |
 | **Gateway-Heartbeat** | `-NoLogo -NoProfile -NonInteractive -File "D:\Ang\FabricGatewayMonitoring\Run-GatewayHeartbeat.ps1"` | At startup；持续 `Running` |
 | **Gateway-NodeInfo** | `-NoLogo -NoProfile -NonInteractive -File "D:\Ang\FabricGatewayMonitoring\Get-DataGatewayInfo.ps1"` | At startup + weekly；完成后 `Ready` |
-| **Gateway-UploadLogs** | `-NoLogo -NoProfile -NonInteractive -File "D:\Ang\FabricGatewayMonitoring\Run-UploadGatewayLogs.ps1" -configFilePath ".\configs\Config.poc.json"` | 用 POC 配置单次验证后 **Disabled** |
+| **Gateway-UploadLogs** | `-NoLogo -NoProfile -NonInteractive -File "D:\Ang\FabricGatewayMonitoring\Run-UploadGatewayLogs.ps1" -configFilePath ".\configs\Config.live-poc.json"` | At startup；2026-11-13 已启用 `Running`（POC 观察） |
 
 **Tasks Settings：** 禁用默认的长任务 72 小时时限；`If the task is already running` 设为 `Do not start a new instance`，并设置失败重试、打开 History。
 
@@ -320,10 +331,22 @@ Get-ScheduledTask -TaskPath $taskPath -TaskName "Gateway-Heartbeat" |
     Get-ScheduledTaskInfo | Select-Object LastRunTime, LastTaskResult
 ```
 
-本次 `Gateway-Heartbeat` 显示 `Running / 267009`（0x41301 = 正在运行），`Gateway-NodeInfo` 显示 `Ready / 0`。**还需要用上文的 KQL freshness 确认数据在持续进来。**
+2026-11-13 截图确认：`Gateway-Heartbeat` **Running**、`Gateway-NodeInfo` **Ready**（短任务正常完成）、`Gateway-UploadLogs` **Running**。`Running / 267009`（0x41301）表示任务仍在运行；**必须另外检查 KQL freshness/Raw/Parsed，而非只看 Task 状态**。
 
-## Phase 9 — 尚未完成：活动日志安全采集
+## Phase 9 — POC 连续观察与 PROD 首次采集计划
 
-**保持 `Gateway-UploadLogs` Disabled。** 原始 Uploader 通过 `Move-Item` 将符合 `*Report_*.log` 的文件移到 `Temp`，上传后写入 `History`，而真实 Gateway 同名文件会持续追加。详见 [ARCHITECTURE_OPERATIONS.md](ARCHITECTURE_OPERATIONS.md)。
+### Scheduled Task 切换至活动日志（2026-11-13 已完成）
 
-下一阶段应先验证只读 Tail / Checkpoint、CSV 多行字段与文件轮转、重试、去重以及企业日志代理替代方案，再决定是否改写 Uploader。**不要将这一步标记为生产就绪。**
+- 实际 TaskPath：`\FabricGatewayMonitoring\`，Task Name：`Gateway-UploadLogs`。先导出 `Gateway-UploadLogs.backup.xml`（1528 bytes）；`Export-ScheduledTask` 必须带 `-TaskPath` 才能找到目标。
+- PowerShell `Set-ScheduledTask` 修改 Action 时提示 `The user name or password is incorrect`，因此通过 **Task Scheduler GUI → Task Properties → Actions → Edit** 修改现有 Action 的 `-configFilePath ".\configs\Config.live-poc.json"`，保留 `pwsh.exe`、原有 WorkingDirectory、Triggers、Principal；无需删除重建任务。
+- 已启用三个 Task：Heartbeat Running、NodeInfo Ready、UploadLogs Running。Uploader 自带 `ReportSendInterval=60` 无限循环，不应每分钟让 Task Scheduler 再启动新进程。
+- **后续 24–48 小时、继而 3–7 天：** 检查 Gateway 的 Refresh/写日志，History 按类型追加、Eventhouse 最新记录与 Raw/Parsed 行数、CPU/内存/磁盘；还需专项验证部分批次成功后失败、Temp 文件恢复、重复/遗漏与重试。
+
+### PROD 首次导入策略（计划中，未实施）
+
+- PROD 已观察到大量历史 Performance Logs、多个近 100 MiB；**不应直接启动原始 uploader 全量回传历史**。
+- 先只读统计并复制候选文件到 **Report 目录之外的独立 Staging**；从约定 cutoff（计划从昨天 00:00）筛选记录。Gateway 原始文件名中的日期可能长期不变，按文件名日期过滤并不可靠；原始 uploader **没有按 CSV 事件时间过滤功能**，需要独立预处理或策略验证。
+- 规划首轮 Backfill 与随后在线持续采集的交接，避免重复/遗漏；勿将旧文件移动到 `Report\Archive` 并期待脚本跳过，原脚本递归扫描子目录。
+- 生产部署前还需验证中断重试、权限、告警、成本和多节点；只读 Tail/Checkpoint 为备用方案，不代表当前已经部署。
+
+**当前仍非 Production Ready。** 本次 POC 只批准测试节点的原始 Move Uploader 持续观察。
