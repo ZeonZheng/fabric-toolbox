@@ -1,6 +1,6 @@
 # Gateway Monitoring｜POC 实施记录
 
-> **更新时间：2026-11-12｜范围：单个 On-premises Data Gateway Cluster / Node**  
+> **更新时间：2026-11-13｜范围：单个 On-premises Data Gateway Cluster / Node**  
 > 本目录记录**实际实施、排障和验证结果**，方便下次继续施工。不是对整个 Fabric Platform Monitoring 项目的完成声明。
 
 ## 当前结论（先看这里）
@@ -10,11 +10,11 @@
 | Fabric Eventstreams → Eventhouse → Semantic Model → Power BI | ✅ 已验证 | Gateway、CPU/Memory、Jobs、Queries 均有可见数据 |
 | Gateway NodeInfo | ✅ 已验证 | SPN 获得 Gateway Cluster Admin 后，KQL 元数据完整 |
 | Gateway Heartbeat | ✅ 已验证 | Scheduled Task 后台持续运行，KQL 数据更新 |
-| Performance Logs 上传 | 🟡 部分验证 | **只验证了复制的历史日志**，未对正在写入的真实日志持续采集 |
-| Gateway-UploadLogs Scheduled Task | ⏸️ Disabled | 已验证任务可运行，出于源文件风险未长期启用 |
+| Performance Logs 上传 | ✅ 首轮真实日志验证 | 8 类活动 Performance Logs 已完成 Move → Eventstream HTTP 201 → History；原目录重新生成文件并继续写入。连续运行质量仍在观察 |
+| Gateway-UploadLogs Scheduled Task | 🟡 Running（观察期） | 2026-11-13 已切换为私有 `Config.live-poc.json`，通过 Task Scheduler GUI 启用并启动；后续需验证持续摄取与数据完整性 |
 | Running Jobs / Job Details、多个节点、Capacity Events 等 | ◻️ 未验证 | 不在这次 Gateway POC 的已验收范围 |
 
-**下一步：** 决定并验证真实性能日志的**只读增量采集方案**（文件轮转、CSV 跨行、Checkpoint、重试、去重）。**不要直接把现有 Uploader 指向生产日志目录后启动。**
+**下一步：** 对当前原始 Uploader 的 **24–48 小时、继而 3–7 天连续采集**进行观察，核对 Eventhouse 记录、重复/遗漏、失败恢复与 Gateway 影响。PROD 先设计首次回传截止点和独立 Staging，不直接对生产日志启动完整历史回传；只读 Tail/Checkpoint 保留为问题出现时的替代方案。
 
 ## 文档导航
 
@@ -34,7 +34,7 @@
 Gateway VM
  ├─ Get-DataGatewayInfo.ps1 ─────┐
  ├─ Run-GatewayHeartbeat.ps1 ────┤ → Fabric Eventstreams
- └─ Run-UploadGatewayLogs.ps1 ───┘   （仅历史日志副本测试）
+ └─ Run-UploadGatewayLogs.ps1 ───┘   （真实 POC Report 目录已启用持续采集观察）
                                       ↓
                              Eventhouse / KQL Database
                                       ↓
@@ -58,7 +58,7 @@ Gateway VM
 
 - **仓库里没有** `Config.json`、Event Hub SAS Key、Client Secret、执行结果中的敏感信息和原始 Gateway 日志。
 - `SecretText` 在 Windows 本机使用 DPAPI 加密，**不能将某台 VM 的密文直接复制到其他 VM 使用**。
-- Uploader 的 `Move-Item` 会移动被采集文件；已观察到 Gateway 会长期向同名性能日志追加，因此**当前未批准对活动文件直接移动**。
+- Uploader 的 `Move-Item` 会移动被采集文件；**当前仅 POC 单节点实测**移动后 Gateway 能重新创建同名文件并继续写入，尚未证明无遗漏/无重复。不得将此结论直接扩展到 PROD。
 - 这是社区 Solution Accelerator，**不等于生产级日志收集系统已通过可靠性测试**。
 
-**本分支仅记录并改动 `monitoring/fabric-platform-monitoring/gateway/`。** 可先阅读部署指南，再根据状态表继续施工。
+**本分支仅记录并改动 `monitoring/fabric-platform-monitoring/gateway/`。** 每次完成新的 POC 里程碑、配置/任务状态变更或发现关键缺陷时，应主动检查并同步更新状态、Runbook、排障与架构决策记录，区分“已验证”与“待验证”。
