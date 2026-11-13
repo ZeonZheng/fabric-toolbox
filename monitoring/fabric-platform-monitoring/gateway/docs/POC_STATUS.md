@@ -94,11 +94,11 @@ GatewaysHeartbeat
 
 本节是**真实活动日志**实验，区别于上表历史副本的 Raw/Parsed 计数；当前没有重新核算真实批次的 Eventhouse 总行数，不得把 HTTP 201 等同于 Exactly-once。
 
-- **测试前：** `Gateway-UploadLogs` Disabled；`\\FabricGatewayMonitoring\\Gateway-UploadLogs` Action 指向 `configs/Config.poc.json`；备份了真实 `Report` 目录中的 8 类性能日志及文件状态 CSV。
-- **测试配置：** 保留原始上传代码，创建单独的本机私有 `Config.live-poc.json`；`GatewayLogsPath` **直接指向** `C:\\Users\\powrbi\\AppData\\Local\\Microsoft\\On-premises data gateway\\Report`；`ReportSendInterval=60`、`ReportRetention=3650`（仅 POC 临时保留）、`EventHubs.UploadReports=true`、两种 Lakehouse 上传为 false。
-- **首轮执行：** 2026-11-13 约 **06:46 UTC**，扫描到 **8 个**匹配文件；每个 `Move-Item` 到 `Report\\Temp` 成功，随后拆分 CSV 消息发送 Eventstream，所有展示的 HTTP 响应为 **201 Created**；每类后续合并到 `Report\\History` 的独立 `*_f.log` 文件。首轮之后再次轮询曾显示 `Gateway Report log count: 0`。
+- **测试前：** `Gateway-UploadLogs` Disabled；`\FabricGatewayMonitoring\Gateway-UploadLogs` Action 指向 `configs/Config.poc.json`；备份了真实 `Report` 目录中的 8 类性能日志及文件状态 CSV。
+- **测试配置：** 保留原始上传代码，创建单独的本机私有 `Config.live-poc.json`；`GatewayLogsPath` **直接指向** `C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report`；`ReportSendInterval=60`、`ReportRetention=3650`（仅 POC 临时保留）、`EventHubs.UploadReports=true`、两种 Lakehouse 上传为 false。
+- **首轮执行：** 2026-11-13 约 **06:46 UTC**，扫描到 **8 个**匹配文件；每个 `Move-Item` 到 `Report\Temp` 成功，随后拆分 CSV 消息发送 Eventstream，所有展示的 HTTP 响应为 **201 Created**；每类后续合并到 `Report\History` 的独立 `*_f.log` 文件。首轮之后再次轮询曾显示 `Gateway Report log count: 0`。
 - **源端行为：** Move 后的 `Report` 根目录重新生成 8 个同名文件，至少一部分文件随后继续增长（例如 `QueryExecutionReport` 重新创建于 2026-11-13，随后仍有写入）。新生成文件名称仍包含 **20261019T110120**，说明文件名时间戳不是物理创建时间；其底层命名策略尚未证实。
-- **Task 更新：** 使用正确的任务路径 `\\FabricGatewayMonitoring\\` 成功导出 `Gateway-UploadLogs.backup.xml`（1528 bytes）。`Set-ScheduledTask` 修改 Action 时出现 `The user name or password is incorrect`，改用 Task Scheduler GUI 修改参数至 `Config.live-poc.json` 并启用运行。截图确认：**Gateway-Heartbeat Running；Gateway-NodeInfo Ready；Gateway-UploadLogs Running**。
+- **Task 更新：** 使用正确的任务路径 `\FabricGatewayMonitoring\` 成功导出 `Gateway-UploadLogs.backup.xml`（1528 bytes）。`Set-ScheduledTask` 修改 Action 时出现 `The user name or password is incorrect`，改用 Task Scheduler GUI 修改参数至 `Config.live-poc.json` 并启用运行。截图确认：**Gateway-Heartbeat Running；Gateway-NodeInfo Ready；Gateway-UploadLogs Running**。
 - **仍需复核：** 24–48h／3–7d 持续运行、每轮记录数与 Eventhouse Raw/Parsed 一致性、重复/遗漏、失败及重试恢复、资源/磁盘占用、用户刷新是否受影响。
 
 **安全边界：** 本次真实 Move 实验仅在 POC Gateway 完成；尚未执行对 PROD Gateway 活动日志的 Move。
