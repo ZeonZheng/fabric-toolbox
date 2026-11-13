@@ -19,7 +19,9 @@
 | Task Scheduler 把 `pwsh.exe` 变成 `C:\Program` | “Program/script” 与参数混填 | 将三栏分开，重新保存后运行成功 |
 | Uploader 运行很久 / `log count: 0` | 分批上报完成后仍持续轮询 | 29 批 HTTP 201，KQL 验证 54,844 条（首次） |
 | Report 仅有 Gateways / Counters | 未上传查询明细、日期不匹配或 Credentials 未配置 | 补两类日志、改日期、Edit credentials |
-| 原始 Gateway 报表文件被长期追加 | 活动文件不是每日新文件 | **不要直接启动生产 Uploader** |
+| 原始 Gateway 报表文件被长期追加 | 文件名旧时间戳 ≠ 物理创建/事件日期 | 2026-11-13 单节点 POC Move 后同名文件重新建立并继续写入；PROD 不可直接推断安全 |
+| `Export-ScheduledTask` 找不到 Task | 任务位于子目录 `\FabricGatewayMonitoring\` | 读取 `TaskPath` 并传入 `-TaskPath` 后导出成功 |
+| `Set-ScheduledTask`: `The user name or password is incorrect` | 修改时触发任务 Principal 凭据验证 | 保持原 Task，改用 Task Scheduler GUI 编辑 Action 并保存，已成功 |
 
 ## 1. Notebook：`NoAvailableProvider` / `JSONDecodeError`
 
@@ -169,4 +171,19 @@ Uploader 会拆分 CSV 成多批请求；处理完静态文件后持续轮询并
 
 ### 不要把“文件移动”当作增量采集
 
-原 Uploader 使用 `Move-Item`，处理所有符合 `*Report_*.log` 的文件。已观察到原始 Gateway 文件持续追加，因此 `Gateway-UploadLogs` 目前 **Disabled**。详见 [运维与架构说明](ARCHITECTURE_OPERATIONS.md)。
+原 Uploader 使用 `Move-Item`，处理所有符合 `*Report_*.log` 的文件。**2026-11-13 在 POC 单节点成功移动 8 类真实文件、收到 HTTP 201、归档至 History，Gateway 后续同名文件重新创建并继续写入；Uploader Task 已启用 Running（观察阶段）。** 不代表 PROD 安全或 Exactly-once。详见 [运维与架构说明](ARCHITECTURE_OPERATIONS.md)。
+
+### 源文件名仍有旧日期、History 文件却是今天
+
+这是两套机制：Gateway 新建的物理文件可能沿用原文件名 `20261019T110120`；Uploader 把原文件 Move 至 Temp 时追加处理时间 `_HHmmss_x.log`，随后 `Merge-ReportFiles` 按当时 UTC 时间创建/追加本地 History `*_f.log`。History 的文件名**不保留原始会话时间戳**；Log 事件时间应看 CSV 内对应字段。
+
+### 上传成功之后还可能有什么风险？
+
+- 发送端逐批发送 HTTP 201 后才执行本地 CSV Merge。若前几个批次已成功、后续失败，原文件已在 Temp，重传可能导致重复。
+- 原始扫描带 `-Recurse`，会包含 Temp 下的 `*_x.log`；失败恢复没有经过 POC 验证。
+- 原始 `GatewayLogsPath` 可以指向 `Report` 父目录；本次 POC 的 `Config.live-poc.json` **直接指向 Report**，首轮上传成功。临时 `ReportRetention=3650` 只影响本地 History，不代表 Eventhouse 保留期。
+- 连续任务 Running 不等于数据新鲜；应以 Eventhouse Raw/Parsed、Heartbeat 时间戳和 Gateway 业务刷新为准。
+
+### Task Scheduler 文件路径与修改方式
+
+原任务在 `Task Scheduler Library\\FabricGatewayMonitoring\\Gateway-UploadLogs`，`TaskPath` 为 `\\FabricGatewayMonitoring\\`。使用 `Export-ScheduledTask -TaskName "Gateway-UploadLogs" -TaskPath "\\FabricGatewayMonitoring\\"` 才能正确定位并生成备份；仅指定 TaskName 曾报 `The system cannot find the file specified`。后台 Task 修改时 `Set-ScheduledTask` 报 `The user name or password is incorrect`，最终通过 GUI 中的 **Properties → Actions → Edit** 将参数切换到 `Config.live-poc.json` 并成功启动，不需要删除重建任务。
