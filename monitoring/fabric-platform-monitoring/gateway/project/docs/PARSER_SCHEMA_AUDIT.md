@@ -1,68 +1,55 @@
-# Gateway Monitoring — Parser/schema consistency audit (2026-11-17)
+# Gateway Parser 缺陷｜发现、根因与复现证据
 
-> **Status: confirmed POC data-quality defect; remediation NOT yet applied.** POC single node only. GitHub branch `docs/gateway-monitoring-poc-20261112` is the source of truth. Evidence backups: [baselines/2026-11-17/](../evidence/2026-11-17/README.md).
+> 2026-11-17 POC 记录。**已确认字段读取错误；修复尚未部署。** 当前状态与下一步统一以 [STATUS](../STATUS.md) 为准。
 
-## Executive summary
+## 1. 源端与 Raw 快照
 
-- Uploader/Eventstream/Raw path is working: 2026-11-16 02:59 UTC query showed **9 `logType` values, 647 JSON messages, 3,693 CSV records**. Eight are CSV Report types; `GatewayNodeInfo` is generated independently. These counts are *point-in-time*, not cumulative or completeness proof.
-- Field inventory from Eventhouse Raw: **106 type/field entries** across 9 types (user's `export (3).csv`), every field within a given type appeared in every sampled record; non-empty ratios differ legitimately by field.
-- Checked Parsed Tables at **2026-11-17 ~06:24 UTC**:
+2026-11-16 02:59 UTC，`GatewayReports-Raw` 查询观察到：**9 种 logType / 647 条 JSON Message / 3693 条 CSV Record**。其中 8 类 CSV Report 及独立生成的 `GatewayNodeInfo`。字段统计共 106 个 Type/Field 组合；同类型每条样本都含有相同字段，但空值比例各不相同。**这是当时的 Raw 快照，不是全量无遗漏证明。**
 
-| Parsed table | Rows | Non-null checked metric | Metric |
+## 2. Raw 值存在，但 Parsed 指标全为 null
+
+Parsed 查询（约 2026-11-17 06:24 UTC）：
+
+| Parsed Table | 总 Rows | 指标有效值 | 检查字段 |
 | --- | ---: | ---: | --- |
-| QueryExecutionReport | 4,595 | 4,595 | `QueryExecutionDuration_ms_` |
-| QueryExecutionAggregationReport | 2,935 | **0** | `AverageQueryExecutionDuration_ms_` |
-| QueryStreamingReport | 2,346 | **0** | `StreamingDuration_ms_` |
-| MashupEvaluationReport | 1,892 | **0** | `AverageCommit byte` |
+| QueryExecutionReport | 4595 | 4595 | `QueryExecutionDuration_ms_`（对照正常） |
+| QueryExecutionAggregationReport | 2935 | **0** | `AverageQueryExecutionDuration_ms_` |
+| QueryStreamingReport | 2346 | **0** | `StreamingDuration_ms_` |
+| MashupEvaluationReport | 1892 | **0** | `AverageCommit byte` |
 
-- Three corresponding Raw field checks at **2026-11-17 ~06:31 UTC**, over the Raw retention window:
+Raw 对应查询（约 06:31 UTC，**不是上表同一历史窗口**）：
 
-| `logType` | Raw field | Raw rows | Non-empty | Example value |
+| LogType | Raw 字段 | Raw 条数 | 非空 | 示例 |
 | --- | --- | ---: | ---: | --- |
 | QueryExecutionAggregationReport | `AverageQueryExecutionDuration(ms)` | 73 | 73 | `266536.00` |
 | QueryStreamingReport | `StreamingDuration(ms)` | 90 | 81 | `38` |
 | MashupEvaluationReport | `AverageCommit(byte)` | 77 | 77 | `261075800.00` |
 
-- User-exported deployed bodies for the **three Parser Functions** match the corresponding functions in the fork's `DatabaseSchema.kql` source snapshot. Source/deployment name mismatches below explain the null behavior; the remaining live functions have **not** been exported/verified.
-- Eventhouse `.show table * policy update` (14 entries) showed enabled update policies for 10 parsed targets with source `GatewayReports-Raw`, transactional true. Filtered `.show ingestion failures` returned zero results for reported 24h window; this does **not** verify payload field quality.
+**根因：** 这三个 Parser 在 `evaluate bag_unpack(log) : (...)` 使用的列名不是当前 Gateway CSV 真正送入 Raw JSON 的字段 Key，导致解析为空值，而不是 Eventstream 随机删掉了这些字段。实际部署 15 个 Function Body 已与 GitHub Schema 原文对照，15/15 一致。
 
-## Field mapping mismatch — confirmed
+源文件：[上游 Schema 备份](../evidence/2026-11-17/DatabaseSchema.source.kql) · [实际 Functions 导出](../evidence/2026-11-17/DeployedFunctions.full.export.csv) · [Update Policy 快照](../evidence/2026-11-17/DeployedUpdatePolicies.sanitized.json)。
 
-| Target field | Source Raw JSON key | Deployed `bag_unpack()` requests | Result |
-| --- | --- | --- | --- |
-| QueryExecutionAggregationReport.`AverageQueryExecutionDuration_ms_` | `AverageQueryExecutionDuration(ms)` | `AverageQueryExecutionDuration_ms_` | all null in checked table |
-| QueryStreamingReport.`StreamingDuration_ms_` | `StreamingDuration(ms)` | `StreamingDuration_ms_` | all null in checked table |
-| MashupEvaluationReport.`AverageCommit byte` | `AverageCommit(byte)` | `AverageCommit byte` | all null in checked table |
+## 3. Update Policy 与 VM 文件观察
 
-Additional gaps **need verification, not yet signed off**:
-- QueryExecutionAggregation: other `Max/Min/Average...Duration(ms)` to `_ms_` mappings.
-- QueryStreaming: `SpoolingDiskReadingDuration(ms)`; Raw also has `StreamingDelayDuration(ms)`, `StreamingPacketsDuration(ms)`, `StreamingTrackingId`, which the current target schema does not preserve.
-- MashupEvaluation: Raw `DataSource`, `TotalProcessorTime(ms)`, `AverageWorkingSet(byte)`, `MaxCommit(byte)`, `MaxWorkingSet(byte)`; target has different field names / `timespan` type, and `DataSourceKinds/Paths` target fields require design clarification.
-- QueryExecutionReport: Raw has `DataReadingDuration(ms)` and `DataSerializationDuration(ms)` not present in current target schema.
-- QueryStartReport: uploader can replace unusually large `QueryText` with sentinel `QueryText too large!`; separately verify parser's Base64 decoding / expansion semantics.
-- Confirm normalized expected schema vs "preserve every CSV field": these are **different acceptance criteria**.
+- 10 个目标表的 Update Policy 启用，源为 `GatewayReports-Raw`，`IsTransactional=true`。
+- 当时 `.show ingestion failures | where OriginatesFromUpdatePolicy == true` 的 24 小时查询为空，但**不能据此认定字段值正确**。
+- VM 目录观察到 42 个 Report 文件（40 History 合并文件 + 2 Source），8 种 Report 类型。History 不能用于证明每个原始文件的成功入库。
+- `GatewayReports-Raw` 默认保留 1 天，Parsed 多数保留 3650 天；修复 Parser **不会自动更新历史 Parsed null**。
 
-## Evidence source, VM state, and retention
+## 4. 验证结果和处置边界
 
-- **2026-11-17 VM snapshot:** report directory contains **42 files (40 History merged + 2 Source)**, 8 Report types. History is a merged archive, not original per-file provenance or proof of ingestion.
-- `GatewayReports-Raw` retention in repository defaults to **1 day**; parsed tables in repository generally 3650 days. Query in current environment before Raw expiry; changing Functions does not automatically rewrite old parsed rows.
-- `DatabaseSchema.source.kql` is a snapshot from GitHub **source**, **not** an actual entire deployed Eventhouse schema dump. User-provided exported live Functions cover 3 parsers only. Credentials, IDs and query payloads deliberately excluded.
+2026-11-17 约 15:40 UTC+8，三组只读 Candidate Dry-run **均成功执行并恢复非空指标**，详情见 [Dry-run 证据](../evidence/2026-11-17/DRYRUN_RESULTS.md)。
 
-## Safe rollout sequence — no live writes performed yet
+后续验收要求：验证 Candidate 与目标表 Schema 完整一致（列名、顺序、类型）；逐项比较 Raw 与 Candidate 的数值及 `TotalProcessorTime(ms)` / `DataSource` 的转换；再审查对事务性 Update Policy 的影响，**只在 POC 中逐个变更**，验证新数据并保留回滚。
 
-1. **Read-only inventory:** export all deployed `.show functions` Bodies, table schemas, Update Policy, and retention policy (review sensitive metadata). Complete 8-type/106-field Raw-to-Target mapping matrix. Record any parser version drift vs source.
-2. **Design patch in GitHub first:** keep existing target schema for targeted bug fix. Use explicit **raw keys** `['... (ms)']` or `record["... (ms)"]`, cast values with `toreal()/tolong()`, alias to target names. For Mashup unit conversion, preserve target semantic type (e.g. ms numeric vs timespan), don't blindly cast to `timespan`. Capture expected/actual schema order.
-3. **Non-mutating validation:** test on recent Raw rows with a standalone `let` / query function, compare before-and-after non-null counts and sample values for **all relevant metrics**, and verify no added nulls.
-4. **POC apply only:** deploy vetted `.create-or-alter function` on the POC Eventhouse; verify Update Policy still enabled and new incoming events populate target values. Do not modify upstream source or PROD silently.
-5. **Historical remediation separately:** assess Raw retention availability, backfill/reingest path, deduplication, and report/model compatibility before modifying old rows.
-6. **Regression:** check all 8 Report types, row count, field accuracy, parsing failures, performance overhead, daily continuity, retry/dedup behavior; only then consider PROD promotion.
+其他字段风险和是否长期完整保存原始列，统一记录在 [全字段映射审计](SCHEMA_FIELD_MAPPING_AUDIT.md)。生产化不得仅凭 3 个指标恢复非空就放行。
 
-### Read-only KQL probe (Raw)
+### 最小复现 KQL（只读）
 
 ```kusto
 ['GatewayReports-Raw']
-| where logType in ("QueryExecutionAggregationReport","QueryStreamingReport","MashupEvaluationReport")
-| mv-expand record=log
+| where logType in ("QueryExecutionAggregationReport", "QueryStreamingReport", "MashupEvaluationReport")
+| mv-expand record = log
 | extend RawValue = case(
     logType == "QueryExecutionAggregationReport", todouble(record["AverageQueryExecutionDuration(ms)"]),
     logType == "QueryStreamingReport", todouble(record["StreamingDuration(ms)"]),
@@ -71,18 +58,6 @@ Additional gaps **need verification, not yet signed off**:
 | summarize Rows=count(), NonNull=countif(isnotnull(RawValue)), Example=take_anyif(RawValue,isnotnull(RawValue)) by logType
 ```
 
-## Rollback and deployment guardrails
+**注意：** 不要将完整 Raw 日志、包含 QueryText 的 CSV、Secrets 或环境敏感标识提交到 GitHub。需要回填时单独制定去重、数据保留和历史恢复方案。
 
-- Save exact previous live function body before any alteration; `create-or-alter` rollback must use a valid management command wrapper around that body.
-- Live update-policy functions may be referenced during ingestion; test in POC with a controlled source period. Existing rows will not change after a function edit.
-- Jumpstart reinstall/update can overwrite custom Fabric objects. Keep patch + validation tests version-controlled under `gateway/` before PROD.
-- Never commit original `GatewayReports-Raw` events or query texts to GitHub; retain any necessary raw payload evidence in an access-controlled location.
-
-**Acceptance criterion:** verified Raw values are present at the correctly named target fields for newly ingested events, within a controlled window; broader source-to-target mapping and exactly-once completeness remain pending.
-
-
-## Full inventory follow-up (2026-11-17)
-
-- [Full deployed 15 Function Bodies](../evidence/2026-11-17/DeployedFunctions.full.export.csv) and [142 schema rows](../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) are now backed up from user-provided Eventhouse exports. All 15 live bodies **match** the GitHub source after whitespace normalisation.
-- For exact raw/target field names and supported vs unsupported metrics, see [SCHEMA_FIELD_MAPPING_AUDIT.md](SCHEMA_FIELD_MAPPING_AUDIT.md).
-- Three **unexecuted candidate** parser rewrites, matching read-only dryrun KQL and live-function rollback commands exist under [kql](../kql/poc-parser-fix-20261117/README.md). They are not yet Kusto validated; do not deploy without dry-run and type/order checks.
+关联：[GW-001](../tracking/ISSUES.md)。

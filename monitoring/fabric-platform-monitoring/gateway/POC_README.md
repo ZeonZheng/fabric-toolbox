@@ -1,10 +1,11 @@
-# Gateway Monitoring POC — new project entry
+# Gateway Monitoring POC｜旧入口
 
-The POC documentation was reorganized. **[Open the current project overview](project/README.md)**.
+项目文件已集中到 **[project/](project/README.md)**，此文件作为原有链接的兼容入口保留。
 
-- [Current status / next action](project/STATUS.md)
-- [Issues and risks](project/ISSUES.md)
-- [Dated evidence](project/evidence/README.md)
-- [Milestone history](project/CHANGELOG.md)
+- [项目总览](project/README.md)
+- [当前状态与下一步](project/STATUS.md)
+- [Issues / 风险](project/tracking/ISSUES.md)
+- [进展时间线](project/tracking/CHANGELOG.md)
+- [Eventhouse Overview 与证据备份](project/evidence/README.md)
 
-This file is retained as a compatibility pointer. Its previous detailed text is available in Git history.
+旧版详细记录仍可通过 Git 历史查看。更新：2026-11-17。

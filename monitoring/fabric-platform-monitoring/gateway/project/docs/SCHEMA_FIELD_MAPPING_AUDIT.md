@@ -1,47 +1,62 @@
-# Gateway Raw CSV → Eventhouse target schema comparison (2026-11-17)
+# Gateway Raw → Eventhouse Parsed｜字段映射审计
 
-**Status:** inspected all 15 live Function bodies and 142 database schema rows. **No live Eventhouse modification.** All 15 deployed Function bodies are textually equivalent after whitespace normalization to the GitHub source schema on branch `docs/gateway-monitoring-poc-20261112`. Both source and deployment therefore share the confirmed parser bugs.
+> **审计日期：** 2026-11-17；**环境：** POC 单节点；**改动状态：** 仅检查及只读 Dry-run，**未修改 Eventhouse Function**。
 
-Source files: [deployed functions](../evidence/2026-11-17/DeployedFunctions.full.export.csv), [deployed schema](../evidence/2026-11-17/DeployedTableSchema.sanitized.csv), [Raw keys/presence](../evidence/2026-11-17/RawFieldInventory.export.csv), [MCP overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.json).
+已取得全部 15 个实际部署 Function Body 和 142 行数据库 Schema；逐一对照工作分支的上游 `DatabaseSchema.kql`，15/15 Function Body 在忽略空白差异后**一致**。本次发现的映射问题因此属于当前仓库定义本身，而非部署版本漂移。
 
-## Coverage overview
+证据：[15 Function Bodies](../evidence/2026-11-17/DeployedFunctions.full.export.csv) · [142 行 Schema](../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) · [106 组 Raw 字段统计](../evidence/2026-11-17/RawFieldInventory.export.csv) · [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md)。
 
-| `logType` | Raw keys observed | Parsed table columns | Finding |
+## 一、类型与字段覆盖
+
+| logType | Raw 已观察字段 | Parsed 表字段 | 关键差异 |
 | --- | ---: | ---: | --- |
-| ConcurrentOperationAggregationReport | 7 | 7 | Names identical; numeric values not independently compared |
-| GatewayNodeInfo | 16 | 17 | Target adds envelope `logDate` |
-| MashupEvaluationReport | 17 | 17 | **5 transform/rename differences**; `DataSourceKinds/Paths` have no direct raw key; `DataSource` and `RequestId` are not retained |
-| OpenConnectionReport | 9 | 9 | Raw `OpenConnectionDuration(ms)` → target `OpenConnectionDuration_ms_`. Existing parser references the **correct raw key** and outputs in target order; no proven bug for that field |
-| QueryExecutionAggregationReport | 13 | 13 | **6 duration fields** have `(ms)` Raw names but parser requests `_ms_` names instead |
-| QueryExecutionReport | 17 | 15 | Six normalized duration/size target columns; parser reads their correct Raw keys. Raw-only `DataReadingDuration(ms)` and `DataSerializationDuration(ms)` are not preserved in parsed table |
-| QueryStartReport | 8 | 18 | Target adds/derives 10 fields from query text and evaluation context; expansion affects cardinality |
-| QueryStreamingReport | 12 | 9 | **2 duration fields** request incorrect Raw names; raw-only `StreamingDelayDuration(ms)`, `StreamingPacketsDuration(ms)`, `StreamingTrackingId` not preserved in target |
-| SystemCounterAggregationReport | 7 | 7 | Names identical; numeric values not independently compared |
-| CopyExecutionReport | 0 in observed Raw | 7 | Target & policy exist but no source samples, so cannot verify |
+| ConcurrentOperationAggregationReport | 7 | 7 | 字段名一致；尚未逐值比对 |
+| GatewayNodeInfo | 16 | 17 | 目标表额外使用 Envelope 中的 `logDate` |
+| MashupEvaluationReport | 17 | 17 | 多个 Byte/Time 字段名不匹配；`DataSourceKinds/Paths` 无相同 Raw Key；`DataSource` / `RequestId` 未按原样保留 |
+| OpenConnectionReport | 9 | 9 | `OpenConnectionDuration(ms)` 被 Parser 正确读取，按目标位置输出；尚未发现该项缺陷 |
+| QueryExecutionAggregationReport | 13 | 13 | **6 个 Duration 字段**的 Raw Key 是 `(ms)`，Parser 却读取 `_ms_` |
+| QueryExecutionReport | 17 | 15 | 时长字段正确读取并按目标位置输出；Raw 独有的 `DataReadingDuration(ms)` / `DataSerializationDuration(ms)` 未保存 |
+| QueryStartReport | 8 | 18 | 从 QueryText / EvaluationContext 派生多个字段；展开后行数可能增加 |
+| QueryStreamingReport | 12 | 9 | **2 个 Duration 字段**的 Raw Key 错配；Raw 的 `StreamingDelayDuration(ms)`、`StreamingPacketsDuration(ms)`、`StreamingTrackingId` 未保存 |
+| SystemCounterAggregationReport | 7 | 7 | 字段名一致；尚未逐值比对 |
+| CopyExecutionReport | 当前 Raw 样本中没有 | 7 | 目标表与 Policy 存在，但没有源样本，不能验证 |
 
-## Confirmed loss-of-value problems (not just display naming)
+## 二、已经用 Raw 与 Parsed 实测确认的问题
 
-| Type | Raw field | Target field | State |
+| 类型 | Raw 原始字段 | Parsed 目标字段 | 实测 |
 | --- | --- | --- | --- |
-| QueryExecutionAggregationReport | AverageQueryExecutionDuration(ms) | AverageQueryExecutionDuration_ms_ | Raw 73/73 nonempty; parsed 0/2935 nonnull |
-| QueryStreamingReport | StreamingDuration(ms) | StreamingDuration_ms_ | Raw 81/90 nonempty; parsed 0/2346 nonnull |
-| MashupEvaluationReport | AverageCommit(byte) | AverageCommit byte | Raw 77/77 nonempty; parsed 0/1892 nonnull |
+| QueryExecutionAggregationReport | `AverageQueryExecutionDuration(ms)` | `AverageQueryExecutionDuration_ms_` | Raw 73/73 非空，Parsed 0/2935 非空 |
+| QueryStreamingReport | `StreamingDuration(ms)` | `StreamingDuration_ms_` | Raw 81/90 非空，Parsed 0/2346 非空 |
+| MashupEvaluationReport | `AverageCommit(byte)` | `AverageCommit byte` | Raw 77/77 非空，Parsed 0/1892 非空 |
 
-**Potentially same defect from source code, pending per-field live value checks:** QueryExecutionAggregation's remaining 5 duration fields; QueryStreaming's `SpoolingDiskReadingDuration(ms)`; MashupEvaluation's `AverageWorkingSet(byte)`, `MaxCommit(byte)`, `MaxWorkingSet(byte)`, `TotalProcessorTime(ms)`.
+另需验证：聚合类型剩余 5 个时长字段、Streaming 的 `SpoolingDiskReadingDuration(ms)`、Mashup 的 WorkingSet / MaxCommit / `TotalProcessorTime(ms)`。
 
-**Key nuance:** Parsed target column names need not match Raw keys if the parser explicitly unpacks the correct Raw keys and **projects them in the exact target column order/types**. Example: `QueryExecutionReport` is correctly unpacking `['QueryExecutionDuration(ms)']` and the tested target field is 4595/4595 nonnull. Do not mechanically rename all functions or modify target schema based only on names.
+**重要区分：** Parsed **列名**可以不同于 Raw JSON **Key**，前提是 Parser 正确读取 Raw Key 并按目标列顺序/类型投影。例如 `QueryExecutionReport` 的 `QueryExecutionDuration(ms)` 已被正确读取，不能把所有 `_ms_` 列名都误判为错误。
 
-## Data completeness and remaining decisions
+## 三、只读修复候选验证结果
 
-1. Decide whether PROD acceptance means **dashboard-required normalized schema** or **every original Gateway CSV field retained for arbitrary later analysis**. Current target schemas do not preserve all Raw fields. Raw retention is set to 1 day; a Raw archive/retention extension or added target fields is needed for long-term raw-field preservation.
-2. For MashupEvaluation, `DataSourceKinds`/`DataSourcePaths` are not keys in the observed CSV. Do **not** invent them from `DataSource` without examining actual payload formats and deciding the intended semantics. Proposed POC patch intentionally leaves them as empty string if absent.
-3. `TotalProcessorTime(ms)` needs conversion into `TotalProcessorTime:timespan` (numeric milliseconds × `1ms`), including null handling and unit test.
-4. Do not infer which Raw `QueryStartReport` rows should equal parsed cardinality without inspecting multi-value evaluation context behavior.
-5. Data in Raw can expire independently of 3650-day parsed retention. MCP snapshot reports 1-day Raw retention, 7-day Heartbeat; it does not verify whole historical completeness. Physical deletion may be asynchronous.
-6. The MCP overview documents 12 physical tables, 15 functions, 10 enabled transactional policies, and 2 healthy materialized views at capture time. Treat it as a point-in-time inventory, not a replacement for actual Function/Schema exports.
-7. None of the candidate patches have been executed or accepted by the POC Kusto engine yet.
+2026-11-17 约 15:40（UTC+8）：
 
-Next steps: [run the three read-only preview queries first](../kql/poc-parser-fix-20261117/README.md), verify schema/order and numeric values, then—after review—apply POC-only Function alterations and check **new** ingested records. Keep rollback scripts ready.
+| Candidate | Raw Rows | 非空结果 |
+| --- | ---: | --- |
+| Aggregation | 77 | 3 个 Query Duration 各 77；3 个 Processing Duration 各 56 |
+| Streaming | 113 | 两个 Duration 各 104 |
+| Mashup | 91 | Memory / Processor 共 5 个指标各 91 |
 
+这证明读取 Raw Key 的方向正确；**没有**证明列序、类型、数值单位、DataSource、Update Policy 运行、历史回填正确。
 
-**2026-11-17 validation update:** Read-only candidates returned 77 / 113 / 91 rows respectively and recovered the expected numeric fields. This validates field lookup but **not** schema ordering, target types, DataSource shape, ingestion behavior, or existing historical rows. See [dry-run evidence](../evidence/2026-11-17/DRYRUN_RESULTS.md) and [STATUS](../STATUS.md).
+## 四、设计和剩余风险
+
+1. 必须决定 PROD 需要**仅用于报表的标准化 Schema**，还是需要长期保存 Gateway CSV 的**所有原始字段**。目前 Parsed 不保留全部字段，而 Raw 仅保留 1 天。
+2. `MashupEvaluationReport.DataSourceKinds/Paths` 不存在对应 Raw Key，不能未经数据语义核实就把 `DataSource` 强行拆成它们。
+3. `TotalProcessorTime(ms)` 要明确从数值毫秒转换为目标 `timespan`，含空值和单位测试。
+4. `QueryStartReport` 会按 EvaluationContext 派生多行，不能一概要求 Raw/Parsed 记录数一比一。
+5. MCP Overview 显示 12 个物理表、15 函数、10 个启用的事务性 Update Policy、2 个健康 MV。这是**瞬时结构快照**，不证明历史数据完整。
+
+## 五、验收前置条件
+
+- 运行 [3 个只读 Schema Check](../kql/poc-parser-fix-20261117/schema/README.md)，逐列匹配名称、顺序、类型。
+- 对照 Raw 原值与 Candidate 数值、单位、DataSource；如果有偏差先修 KQL。
+- 然后才考虑 POC `.create-or-alter function`，逐个上线/观察，保留 [Rollback](../kql/poc-parser-fix-20261117/README.md)。现有 Parsed 历史 null 不会自动修复。
+
+对问题的完整复现见 [PARSER_SCHEMA_AUDIT.md](PARSER_SCHEMA_AUDIT.md)。对应 Issue：[GW-001](../tracking/ISSUES.md)。
