@@ -22,6 +22,17 @@
 | [export (9)](SchemaCheck-QueryStreamingReport.csv) | Streaming | 9/9 |
 | [export (10)](SchemaCheck-MashupEvaluationReport.csv) | Mashup | 17/17 |
 
-**39/39 列全部一致**，列序从 0 连续到末列。下一步保存 [数值/单位检查](../../kql/poc-parser-fix-20261117/value-checks/README.md) 的结果。此验证不证明已修改运行中 Parser。
+**39/39 列全部一致**，列序从 0 连续到末列。此验证不证明已修改运行中 Parser。
+
+## 数值与时间单位验证（2026-11-17 16:54 UTC+8）
+
+[用户导出的完整 CSV](ValueCheck-ParserConversions.csv) 包含 15 项：Aggregation 6 个 Duration、Streaming 2 个 Duration、Mashup 4 个 Memory 与 1 个 timespan、Aggregation/Streaming 各 1 个 DataSource 非空率。
+
+- Raw 记录总计 **338 条**（96 + 139 + 103，均在此次 Raw 保留窗口内）。13 个数值指标对应 **1,276 次非空转换**：全部 `ConversionLoss=0`、`ChangedByCast=0`（比较阈值 `>0.0001`）。
+- DataSource 共 **235 次非空检查**，输入输出均非空；`ChangedByCast` 为 **空值（未执行值比较）**，绝不能视作语义已验证。
+- Mashup 样本 `156 ms → 00:00:00.1560000`，103 条 Raw 的 `TotalProcessorTime` 毫秒回算未出现超过阈值的差异。
+- `SampleRaw` 与 `SampleCandidate` 分别任意抽样，**不是配对行值**。非空率/阈值通过不等于全部数值精确无误，也未完成 Legacy vs Candidate 的 DataSource 内容等价验证。
+
+**尚待执行：** [DataSource 内容/结构只读对照](../../kql/poc-parser-fix-20261117/value-checks/DATASOURCE_README.md)。之后再做 POC DDL 变更审查。
 
 [相关测试脚本](../../kql/poc-parser-fix-20261117/README.md) · [GW-001](../../tracking/ISSUES.md) · [STATUS](../../STATUS.md)。

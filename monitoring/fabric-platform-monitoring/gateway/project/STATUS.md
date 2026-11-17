@@ -11,7 +11,8 @@
 | KQL Parser 缺陷（GW-001） | **根因已确认，Dry-run 通过** | Raw 有数值，Parsed 三项指标全 null；修复候选 3/3 可从 Raw 读取非空值 |
 | 部署前备份 | **已完成现有材料的基线** | 15 Function Bodies、142 行 Schema、Policy 快照、MCP Overview；非整库物理备份 |
 | Schema 兼容性 | **已通过 39/39** | Aggregation 13/13、Streaming 9/9、Mashup 17/17；CSV 已归档 |
-| 数值、单位及 DataSource | **待验证（当前关口）** | 原值转换、long 精度、TotalProcessorTime 单位及 DataSource 语义 |
+| 数值及时间单位 | **当前 Raw 样本通过** | 15 项检查中数值项 13 项无转换丢失/超过阈值变化；Mashup 毫秒 → timespan 回算正常 |
+| DataSource 语义等价性 | **待验证（当前关口）** | Aggregation / Streaming 原版 bag_unpack 结果与 Candidate 内容是否相同；Mashup Kinds/Paths 尚无 Raw Key |
 | POC Function 修复 | **未执行** | GitHub 中仅有候选 Patch 与 Rollback，运行中的 Eventhouse 未修改 |
 | PROD 设计 | **未完成** | Upload Manifest、重试/去重、多节点、保留策略、Backfill、隐私/告警 |
 
@@ -27,7 +28,9 @@
 
 ### 当前唯一下一步
 
-运行 [只读数值/单位验证 KQL](kql/poc-parser-fix-20261117/value-checks/README.md)：检查 Raw 非空到类型转换的损失、long 精度、TotalProcessorTime(ms) → timespan 及 DataSource 非空率。后续仍要确认 DataSource 语义；**勿运行 candidates/ 的 DDL**。
+执行 [**DataSource 语义一致性只读查询**](kql/poc-parser-fix-20261117/value-checks/DATASOURCE_README.md)：对照当前 Legacy Parser 的 bag_unpack 结果与新 Candidate 的规范化 DataSource，要求 `DifferentSerialized=0`（若非 0，检查 dynamic 序列化顺序等原因）；另外统计 Mashup Raw 是否确有 `DataSourceKinds/Paths` Key。此项通过且审查变更风险之后才考虑单个 POC Function DDL。**勿直接运行 candidates/。**
+
+**Value Check 已完成（2026-11-17 16:54 UTC+8）：** 103 Mashup + 96 Aggregation + 139 Streaming = 338 条 Raw 记录的 15 项（13 数值 + 2 DataSource 非空率）统计；`ConversionLoss` 全 0，13 个数值项 `ChangedByCast` 全 0（阈值 0.0001），原值与 Candidate 非空次数一致。详情：[CSV](evidence/2026-11-17/ValueCheck-ParserConversions.csv)。
 
 **Schema Check 已完成（2026-11-17 16:37～16:38 UTC+8）：** 13/13 + 9/9 + 17/17 = **39/39 列 IsMatch=true**，列名/类型/顺序一致，见 [导出证据](evidence/2026-11-17/README.md)。
 

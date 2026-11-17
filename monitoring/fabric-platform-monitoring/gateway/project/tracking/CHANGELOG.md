@@ -2,6 +2,11 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-17 16:54（UTC+8）— 数值/单位只读验证通过
+- 用户执行 `value-checks/1-parser-value-validation.kql`，导出 `export (11).csv`，已在 evidence 归档。共 **15 项：13 个数值转换指标 + 2 个 DataSource 非空率检查**，涉及 **338 条 Raw 记录**（Mashup 103 / Aggregation 96 / Streaming 139）。
+- 13 个数值项共 **1,276 次非空值转换**：`ConversionLoss=0`、`ChangedByCast=0`（阈值 0.0001），Mashup 的 `TotalProcessorTime(ms)` 经 timespan 毫秒回算未发现超阈值差异。DataSource 的 235 次非空检查未发现空值损失，但**未证明内容等价**。
+- 新增 DataSource 原版 bag_unpack vs Candidate 只读比较与 Mashup Raw Key 存在性检查，**尚未执行**；没有修改 POC Function、Update Policy 或 PROD。
+
 ## 2026-11-17 16:37～16:38（UTC+8）— Parser Schema 检查通过
 - Aggregation 13/13、Streaming 9/9、Mashup 17/17，**39 个 IsMatch 均为 true**；已归档 CSV (8)/(9)/(10)。
 - 新增只读 value-checks 查询，尚未执行；没有修改实际 Eventhouse Function。

@@ -5,7 +5,7 @@
 | 阶段 | 关键交付 / 通过条件 | 状态 |
 | --- | --- | --- |
 | **P0 — Functional POC** | Gateway → Fabric → Report 链路、8 种 Report、Heartbeat / NodeInfo 功能可用 | **功能性验收完成**；不含可靠性保证 |
-| **P1 — Data Correctness** | 所需 Raw 字段均正确映射；Schema、数值、回归合格；KQL 修复与 Rollback 可复现 | **进行中**：Dry-run 3/3、Schema 39/39 已通过；数值/单位与部署仍待验证 |
+| **P1 — Data Correctness** | 所需 Raw 字段均正确映射；Schema、数值、回归合格；KQL 修复与 Rollback 可复现 | **进行中**：Dry-run 3/3、Schema 39/39、数值/单位样本已通过；DataSource 语义、POC 部署仍待验证 |
 | **P2 — Collector Reliability** | 文件/记录/批次可对账，轮转、部分失败、重试、去重、资源开销及长时间运行通过 | 未完成 |
 | **P3 — PROD Architecture** | Upload Manifest 方案、保留/回放、Event-time Backfill、多节点、安全与监控达成技术决策 | 规划中 |
 | **P4 — Limited PROD Pilot** | 受控部署、验证看板、Rollback、运维交接及实际验收 | 尚未批准 |

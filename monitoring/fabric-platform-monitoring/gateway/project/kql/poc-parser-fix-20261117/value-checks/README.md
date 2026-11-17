@@ -1,6 +1,8 @@
 # 数值与单位验证（只读）
 
-**状态：** KQL 已加入 GitHub，尚未在 Eventhouse 引擎验证。禁止把脚本运行成功当作对实际 Function 变更的授权。
+**状态（2026-11-17 16:54 UTC+8）：** 用户已在 POC Eventhouse 成功运行本查询，结果详见 [ValueCheck-ParserConversions.csv](../../../evidence/2026-11-17/ValueCheck-ParserConversions.csv)。13 个数值指标无转换损失/超阈值变化，2 项 DataSource 仅验证了非空率。
+
+**下一项：** [DataSource 原版与新版内容对照](DATASOURCE_README.md)，尚未运行。禁止把脚本运行成功当作对实际 Function 变更的授权。
 
 [1-parser-value-validation.kql](1-parser-value-validation.kql) 用**一个查询**对三个 Candidate 涉及的指标作转换风险检查：
 

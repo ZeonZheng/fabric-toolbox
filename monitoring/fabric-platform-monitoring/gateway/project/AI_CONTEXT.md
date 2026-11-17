@@ -7,7 +7,7 @@
 - 当前 POC 是 **单 Gateway Cluster、单 Node**；项目路径 `monitoring/fabric-platform-monitoring/gateway/project/`；工作分支 `docs/gateway-monitoring-poc-20261112`。
 - `project/` 是**我们的工作区**；Vendor PowerShell / Scheduler / Report 以及 `src/Gateway/` 仍留在上游位置，避免影响上游升级差异比对。已确认的 Heartbeat 修改详见 [UPSTREAM_CHANGES](docs/UPSTREAM_CHANGES.md)。
 - Uploader 原始实现为 `Move → Temp → Eventstream → History`，8 种 Report CSV 已观察到；`HTTP 201` 不等于端到端 Exactly-once。
-- KQL 已获得 15/15 实际部署 Function Body 和 142 行 Schema；部署 Body 与 GitHub 源码一致。3 个 Parser 的只读修复候选成功恢复非空，**Schema 39/39 已通过**，数值与单位仍待验证，未执行任何 Function DDL。
+- KQL 已获得 15/15 实际部署 Function Body 和 142 行 Schema；部署 Body 与 GitHub 源码一致。3 个 Parser 的只读修复候选成功恢复非空，**Schema 39/39 已通过**，13 个数值转换项在当前 Raw 样本中零丢失、零超阈值差异；DataSource 内容等价仍待验证，未执行任何 Function DDL。
 - Eventhouse `GatewayReports-Raw` 默认 1 天保留，Parsed 大多 3650 天。40 个合并 History 文件 + 2 个 Source 文件不能证明全部记录均被上传。
 - **PROD 尚未获准**；Upload Manifest 是候选设计，不是已实现能力。
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点：** Dry-run 3/3 与 Schema 39/39 通过，下一步为 [数值/单位只读检查](kql/poc-parser-fix-20261117/value-checks/README.md)，不能直接部署。
+**当前交接点：** Dry-run 3/3、Schema 39/39、Value 数值指标 13/13 已通过；DataSource 仅非空率通过。下一步 [Legacy vs Candidate DataSource 内容对照](kql/poc-parser-fix-20261117/value-checks/DATASOURCE_README.md)。不能直接部署。

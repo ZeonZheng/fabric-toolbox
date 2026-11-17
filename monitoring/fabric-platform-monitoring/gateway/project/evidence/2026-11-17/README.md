@@ -16,6 +16,7 @@
 | [EventhouseOverview.MCP.sanitized.json](EventhouseOverview.MCP.sanitized.json) | 用户通过 Eventhouse Remote MCP 生成的结构 Overview | **12 Tables、15 Functions、10 Update Policies、2 Materialized Views** 以及 Retention、库存行数；去除部分环境标识 |
 | [EventhouseOverview.MCP.sanitized.md](EventhouseOverview.MCP.sanitized.md) | 同次 MCP Overview 的 Markdown 说明 | 中文结构总览、数据流、表/列、策略及问题摘要；适合人和 AI 快速查看 |
 | [DRYRUN_RESULTS.md](DRYRUN_RESULTS.md) | 用户 KQL 截图转录 | 3 个 Parser Dry-run 的结果统计，未执行部署 |
+| [ValueCheck-ParserConversions.csv](ValueCheck-ParserConversions.csv) | 用户导出 (11)，2026-11-17 16:54（UTC+8） | 15 个验证项、13 数值 + 2 DataSource 非空检查；全部 `ConversionLoss=0`，13 个数值项 `ChangedByCast=0`；DataSource 内容仍需进一步验证 |
 | [SchemaCheck-QueryExecutionAggregationReport.csv](SchemaCheck-QueryExecutionAggregationReport.csv) | 用户导出 (8)，2026-11-17 16:37（UTC+8） | 13/13 列 IsMatch=true |
 | [SchemaCheck-QueryStreamingReport.csv](SchemaCheck-QueryStreamingReport.csv) | 用户导出 (9)，2026-11-17 16:38（UTC+8） | 9/9 列 IsMatch=true |
 | [SchemaCheck-MashupEvaluationReport.csv](SchemaCheck-MashupEvaluationReport.csv) | 用户导出 (10)，2026-11-17 16:38（UTC+8） | 17/17 列 IsMatch=true |
