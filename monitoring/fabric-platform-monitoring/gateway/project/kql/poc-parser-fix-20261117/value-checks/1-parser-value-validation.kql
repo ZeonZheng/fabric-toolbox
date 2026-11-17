@@ -1,0 +1,72 @@
+// 只读验证；未在实际 POC KQL 引擎运行过本文件（需要先测试）。
+// 不输出 DataSource 原值；先检查 Raw 非空值的转换成功率、数值截断及时间单位。
+// 如果 ConversionLoss > 0，或 ChangedByCast > 0，先分析，再考虑 Function DDL。
+let NumericChecks =
+    ['GatewayReports-Raw']
+    | where logType in ("QueryExecutionAggregationReport", "QueryStreamingReport", "MashupEvaluationReport")
+    | mv-expand record = log
+    | extend Keys = case(
+        logType == "QueryExecutionAggregationReport",
+            dynamic(["AverageQueryExecutionDuration(ms)", "MaxQueryExecutionDuration(ms)", "MinQueryExecutionDuration(ms)", "AverageDataProcessingDuration(ms)", "MaxDataProcessingDuration(ms)", "MinDataProcessingDuration(ms)"]),
+        logType == "QueryStreamingReport",
+            dynamic(["SpoolingDiskReadingDuration(ms)", "StreamingDuration(ms)"]),
+        logType == "MashupEvaluationReport",
+            dynamic(["AverageCommit(byte)", "AverageWorkingSet(byte)", "MaxCommit(byte)", "MaxWorkingSet(byte)"]),
+        dynamic([]))
+    | mv-expand FieldName = Keys to typeof(string)
+    | extend TargetType = iff(FieldName startswith "Average", "real", "long")
+    | extend RawText = tostring(record[FieldName]),
+             RawNumber = todouble(record[FieldName])
+    | extend CandidateNumber = iff(
+        TargetType == "long",
+        todouble(tolong(record[FieldName])),
+        toreal(record[FieldName]))
+    | summarize
+        RecordCount = count(),
+        RawNonEmpty = countif(isnotempty(RawText)),
+        CandidateNonNull = countif(isnotnull(CandidateNumber)),
+        ConversionLoss = countif(isnotempty(RawText) and isnull(CandidateNumber)),
+        ChangedByCast = countif(isnotnull(RawNumber) and isnotnull(CandidateNumber) and abs(RawNumber - CandidateNumber) > 0.0001),
+        SampleRaw = take_anyif(RawText, isnotempty(RawText)),
+        SampleCandidate = take_anyif(tostring(CandidateNumber), isnotnull(CandidateNumber))
+      by logType, FieldName, TargetType;
+let DataSourceChecks =
+    ['GatewayReports-Raw']
+    | where logType in ("QueryExecutionAggregationReport", "QueryStreamingReport")
+    | mv-expand record = log
+    | extend RawText = tostring(record.DataSource)
+    | extend CandidateText = tostring(parse_json((replace_strings(dynamic_to_json(record.DataSource),dynamic(['["','"]','\\"']),dynamic(['[',']','"'])))))
+    | summarize
+        RecordCount = count(),
+        RawNonEmpty = countif(isnotempty(RawText)),
+        CandidateNonNull = countif(isnotempty(CandidateText)),
+        ConversionLoss = countif(isnotempty(RawText) and isempty(CandidateText))
+      by logType
+    | extend
+        FieldName = "DataSource (非空率，具体结构仍需人工确认)",
+        TargetType = "dynamic",
+        ChangedByCast = long(null),
+        SampleRaw = "(已隐藏)",
+        SampleCandidate = "(已隐藏)";
+let TimespanChecks =
+    ['GatewayReports-Raw']
+    | where logType == "MashupEvaluationReport"
+    | mv-expand record = log
+    | extend RawText = tostring(record["TotalProcessorTime(ms)"]),
+             RawMilliseconds = todouble(record["TotalProcessorTime(ms)"]),
+             CandidateTimespan = toreal(record["TotalProcessorTime(ms)"]) * 1ms
+    | extend RoundTripMilliseconds = todouble(CandidateTimespan / 1ms)
+    | summarize
+        RecordCount = count(),
+        RawNonEmpty = countif(isnotempty(RawText)),
+        CandidateNonNull = countif(isnotnull(CandidateTimespan)),
+        ConversionLoss = countif(isnotempty(RawText) and isnull(CandidateTimespan)),
+        ChangedByCast = countif(isnotnull(RawMilliseconds) and isnotnull(RoundTripMilliseconds) and abs(RawMilliseconds - RoundTripMilliseconds) > 0.0001),
+        SampleRaw = take_anyif(RawText, isnotempty(RawText)),
+        SampleCandidate = take_anyif(tostring(CandidateTimespan), isnotnull(CandidateTimespan))
+      by logType
+    | extend FieldName = "TotalProcessorTime(ms) -> timespan", TargetType = "timespan";
+union NumericChecks, DataSourceChecks, TimespanChecks
+| project logType, FieldName, TargetType, RecordCount, RawNonEmpty,
+          CandidateNonNull, ConversionLoss, ChangedByCast, SampleRaw, SampleCandidate
+| order by logType asc, FieldName asc
