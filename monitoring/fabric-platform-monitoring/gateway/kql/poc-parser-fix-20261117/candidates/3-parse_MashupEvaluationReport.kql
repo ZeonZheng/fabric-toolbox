@@ -1,0 +1,25 @@
+// POC CANDIDATE ONLY. Not validated in a live KQL engine. Do NOT apply before dry-run tests.
+// May cause transactional source ingestion failure if schema/type incompatible.
+.create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from MashupEvaluationReport") parse_MashupEvaluationReport() {
+['GatewayReports-Raw']
+| where logType == "MashupEvaluationReport"
+| mv-expand record = log
+| project
+    GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+    QueryTrackingId = toguid(tostring(record.QueryTrackingId)),
+    ConnectionId = toguid(tostring(record.ConnectionId)),
+    DataSourceKinds = tostring(record.DataSourceKinds), // No corresponding CSV key in the observed sample; intentionally not inferred
+    DataSourcePaths = tostring(record.DataSourcePaths), // Same limitation; do not equate to DataSource without inspecting payload
+    EndTimeUTC = todatetime(record.EndTimeUTC),
+    ['AverageCommit byte'] = toreal(record["AverageCommit(byte)"]),
+    AverageIODataBytesPerSecond = toreal(record.AverageIODataBytesPerSecond),
+    AveragePercentProcessorTime = toreal(record.AveragePercentProcessorTime),
+    ['AverageWorkingSet byte'] = toreal(record["AverageWorkingSet(byte)"]),
+    ['MaxCommit byte'] = tolong(record["MaxCommit(byte)"]),
+    MaxIODataBytesPerSecond = tolong(record.MaxIODataBytesPerSecond),
+    MaxPercentProcessorTime = toreal(record.MaxPercentProcessorTime),
+    ['MaxWorkingSet byte'] = tolong(record["MaxWorkingSet(byte)"]),
+    TotalBytes = tolong(record.TotalBytes),
+    TotalProcessorTime = toreal(record["TotalProcessorTime(ms)"]) * 1ms,
+    TotalRows = toreal(record.TotalRows)
+}
