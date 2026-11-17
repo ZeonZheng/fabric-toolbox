@@ -1,0 +1,163 @@
+{
+  "capturedDate": "2026-11-17",
+  "source": "Eventhouse .show table * policy update; user export (4), GUID sanitized",
+  "count": 14,
+  "policies": [
+    {
+      "table": "GatewaysHeartbeat",
+      "policy": []
+    },
+    {
+      "table": "GatewayReports-Raw",
+      "policy": []
+    },
+    {
+      "table": "SystemCounterAggregationReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_SystemCounterAggregationReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "QueryStartReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_QueryStartReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "QueryExecutionReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_QueryExecutionReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "OpenConnectionReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_OpenConnectionReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "QueryExecutionAggregationReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_QueryExecutionAggregationReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "QueryStreamingReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_QueryStreamingReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "MashupEvaluationReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_MashupEvaluationReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "ConcurrentOperationAggregationReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_ConcurrentOperationAggregationReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "GatewayNodeInfoRaw",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_GatewayNodeInfoRaw()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "CopyExecutionReport",
+      "policy": [
+        {
+          "IsEnabled": true,
+          "Source": "GatewayReports-Raw",
+          "Query": "parse_CopyExecutionReport()",
+          "IsTransactional": true,
+          "PropagateIngestionProperties": false,
+          "ManagedIdentity": null,
+          "OwnerPrincipalDetails": "518cde21-4f34-4fd8-b9ab-b8d59c183c01;0ae51e19-07c8-4e4b-bb6d-648ee58410f4"
+        }
+      ]
+    },
+    {
+      "table": "_MV_GatewayNodeInfo",
+      "policy": []
+    },
+    {
+      "table": "_MV_GatewayNodeStatus",
+      "policy": []
+    }
+  ]
+}
