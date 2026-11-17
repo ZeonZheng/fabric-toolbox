@@ -1,30 +1,37 @@
-# Gateway Monitoring — POC & Production Readiness
+# Gateway Monitoring｜项目入口
 
-**As of:** 2026-11-17 (Asia/Singapore) · **Phase:** Parser correctness validation · **Environment:** single Gateway node POC · **PROD:** Not approved.
+> **范围：** Microsoft Fabric Platform Monitoring / Gateway Monitoring；单节点 POC → 生产可行性验证。  
+> **当前阶段：** P1 — 数据解析准确性验证。**PROD 尚未获准部署。**  
+> **最后更新：** 2026-11-17（Asia/Singapore）  
+> **工作分支：** `docs/gateway-monitoring-poc-20261112`（`main` 不修改）
 
-The Fabric VM → Eventstream → Eventhouse → Semantic Model → Power BI chain is working in POC. Continuous collection is under observation, and full source-to-Eventhouse record reconciliation is **not completed**. A confirmed Raw → Parsed schema mismatch caused three sample performance metrics to remain null in target tables. Three **read-only KQL candidate fixes executed successfully**; their schema/type/value compatibility must be checked before live Function DDL.
+## 30 秒了解项目
 
-## Project cockpit
+已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空值，**尚未通过 Schema / 数值验收，也未修改线上 POC Functions**。
 
-| Purpose | Single authoritative file |
+## 快速导航（以此处为准）
+
+| 问题 | 唯一权威入口 |
 | --- | --- |
-| **Current state and immediate next action** | [STATUS.md](STATUS.md) |
-| Roadmap, milestones, release gates | [ROADMAP.md](ROADMAP.md) |
-| Issues, risks, priorities | [ISSUES.md](ISSUES.md) |
-| Accepted / provisional decisions | [DECISIONS.md](DECISIONS.md) |
-| Timestamped change history | [CHANGELOG.md](CHANGELOG.md) |
-| AI / engineer context and safety guardrails | [AI_CONTEXT.md](AI_CONTEXT.md) |
-| Detailed implementation notes | [docs/INDEX.md](docs/INDEX.md) |
-| Captured KQL outputs and baselines | [evidence/README.md](evidence/README.md) |
-| Dry-run / candidate / rollback KQL | [kql/poc-parser-fix-20261117/README.md](kql/poc-parser-fix-20261117/README.md) |
-| Adapted installation notebooks | [notebooks/](notebooks/) |
+| **现在做到哪一步？我要做什么？** | [STATUS.md](STATUS.md) |
+| 问题、风险与状态 | [tracking/ISSUES.md](tracking/ISSUES.md) |
+| Phase 与进入 PROD 的验收条件 | [tracking/ROADMAP.md](tracking/ROADMAP.md) |
+| 已决定事项与设计取舍 | [tracking/DECISIONS.md](tracking/DECISIONS.md) |
+| 按日期追踪本次及历史进展 | [tracking/CHANGELOG.md](tracking/CHANGELOG.md) |
+| 人员 / AI 接手需要的固定背景 | [AI_CONTEXT.md](AI_CONTEXT.md) |
+| 架构、部署、排障等技术文档 | [docs/INDEX.md](docs/INDEX.md) |
+| 实测证据、Eventhouse Overview、Schema 备份 | [evidence/README.md](evidence/README.md) |
+| KQL Dry-run / Schema Check / Candidate / Rollback | [kql/poc-parser-fix-20261117/README.md](kql/poc-parser-fix-20261117/README.md) |
+| 我们适配的 Notebook | [notebooks/](notebooks/) |
 
-## Boundary
+## 目录边界：我们的工作 vs 上游源码
 
-**Vendor assets remain outside `project/`:** [PowerShellScript](../PowerShellScript/), [TaskSchedulers](../TaskSchedulers/), [PBI Report](../PBI%20Report/), [Fabric deployable definitions](../../src/Gateway/). One deliberately modified upstream script is `Run-GatewayHeartbeat.ps1`; see [UPSTREAM_CHANGES](docs/UPSTREAM_CHANGES.md).
+- **我们的项目资产仅放在此 `project/` 下**：状态、问题、架构记录、验收、KQL 候选、证据、适配 Notebook。
+- **上游项目保留原路径**：[`PowerShellScript/`](../PowerShellScript/)、[`TaskSchedulers/`](../TaskSchedulers/)、[`PBI Report/`](../PBI%20Report/)、[`src/Gateway/`](../../src/Gateway/)。
+- 上游脚本已有一项在 fork 中验证过的修改：Heartbeat `$body → $msg`；见 [差异清单](docs/UPSTREAM_CHANGES.md)。
+- **GitHub 是工程资产与决策的 Source of Truth**；实际 Eventhouse 变更必须同步回 Git。Raw 样本、QueryText、Credentials、SAS Keys 和环境专属敏感数据不进入仓库。
+- 此项目只需维护我们两人协作的记录；**不设置 Owner / Assignee、RACI、无意义的审批角色字段**。如未来加入多人再按需引入。
 
-GitHub is the source of truth for our engineering decisions and source patches. Current POC runtime Config, secret material, Gateway log content and QueryText are **never** committed. Jumpstart reinstall/update can overwrite Eventhouse customizations.
+**阅读原则：** `STATUS` 只写现状和唯一下一步；`tracking` 写状态/决策/历史；`docs` 记录技术过程；`evidence` 只放有时间和来源的证据。避免一段信息在多个文件反复维护。
 
-**Current evidence:** Aggregation 77 rows (6 non-null metrics: 77/77/77 and 56/56/56); Streaming 113 rows (2 metrics: 104 each); Mashup 91 rows (5 metrics: 91 each). These are dry-run successes **only**, not evidence of deployed repair.
-
-[Return to Gateway entry](../README.md)
+[返回 Gateway 目录](../README.md)

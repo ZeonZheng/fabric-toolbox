@@ -1,14 +1,15 @@
-# Decisions (lightweight ADR index)
+# 技术决策记录（轻量 ADR）
 
-**Updated 2026-11-17 (Asia/Singapore).** An accepted direction is not proof of implementation.
+> 更新：2026-11-17（Asia/Singapore）。**决策 ≠ 已实现**；保留上下文和约束，不为单人项目增加复杂审批流程。
 
-| ID | Date | Decision | Status / reason |
+| ADR | 日期 | 决策 | 状态与理由 |
 | --- | --- | --- | --- |
-| ADR-001 | 2026-11-17 | GitHub engineering assets are the source of truth | Accepted: deployed UI changes must be reproducible from reviewed files |
-| ADR-002 | 2026-11-17 | Keep vendor upstream paths unchanged; group OUR artifacts under `gateway/project/` | Implemented in this branch, preserves upstream comparison |
-| ADR-003 | 2026-11-17 | Read-only Parser tests before any POC `.create-or-alter function`; retain rollback | Accepted; dry-runs done, schema/value checks pending |
-| ADR-004 | 2026-11-17 | Include Upload Manifest as PROD design candidate | Accepted for evaluation only; no manifest built |
-| ADR-005 | 2026-11-13 | Observe original Move uploader only in bounded POC; PROD uses staging and event-time cutoff | POC-only scope; reliability unproven |
-| ADR-006 | 2026-11-17 | Keep target Parsed schema during initial mapping fix, separately evaluate full Raw field retention | Provisional; avoids unreviewed model/report breaking changes |
+| ADR-001 | 2026-11-17 | **GitHub 作为工程 Source of Truth** | 已采纳：Eventhouse 运行修改必须对应可审查、可回滚的仓库资产 |
+| ADR-002 | 2026-11-17 | 我们的资产集中在 `gateway/project/`，上游文件保持原路径 | 已实施：便于识别项目边界与 Upstream Diff |
+| ADR-003 | 2026-11-17 | 先做只读 Parser 验证，再决定 POC Function DDL | 已采纳：Dry-run 通过，但 Schema/数值仍需验证；未部署 |
+| ADR-004 | 2026-11-17 | PROD 方案考虑 Upload Manifest | 已进入设计 Backlog：不是已实现功能 |
+| ADR-005 | 2026-11-13 | 原始 Move Uploader 仅在受控 POC 观察；PROD 首轮使用独立 Staging 与事件时间 Cutoff | POC 决策，尚未完成可靠性测试 |
+| ADR-006 | 2026-11-17 | 首轮修复尽量保持现有 Parsed Table 结构；全字段长期留存另议 | 暂定：降低 Report / Model 兼容风险 |
+| ADR-007 | 2026-11-17 | 单人项目精简管理，不设 Owner / Assignee；项目说明统一中文 | 已采纳：入口清晰、追踪可审计，保持维护成本低 |
 
-For technical rationale, see [Architecture](docs/ARCHITECTURE_OPERATIONS.md), [Parser audit](docs/PARSER_SCHEMA_AUDIT.md), [Manifest design](docs/PROD_UPLOAD_MANIFEST_DESIGN.md).
+详细理由参见 [架构与运维](../docs/ARCHITECTURE_OPERATIONS.md)、[Parser 审计](../docs/PARSER_SCHEMA_AUDIT.md)、[Manifest 设计](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md)。

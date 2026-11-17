@@ -1,21 +1,27 @@
-# Project worklog (chronological)
+# 项目进展时间线
 
-Each entry is dated in **Asia/Singapore**. This is a historical log, not the latest status; use [STATUS.md](STATUS.md).
+> 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
-## 2026-11-17 — POC candidate validation and repository refactor
-- Completed read-only KQL dry-runs: Aggregation 77 rows (3 fields 77 non-null, 3 fields 56); Streaming 113 rows (2 fields 104); Mashup 91 rows (5 fields 91). **Not deployed**.
-- Captured 15 live Function bodies, 142 deployed-schema rows, enabled Update Policies and sanitized MCP Eventhouse overview. Source and deployed function bodies agreed 15/15.
-- Reorganized **our** docs/evidence/KQL/notebooks under `gateway/project/`. Kept upstream code and vendor assets in place. Introduced central project overview, current status, issue register, ADR log, roadmap and AI handoff.
-- Added read-only `kql/poc-parser-fix-20261117/schema/` comparison queries for all three candidates. No schema outputs supplied yet.\n- Next: verify target column order/types and sampled values, then gate POC-only deployment.
+## 2026-11-17 — 项目结构精简与中文统一
+- 按单人项目精简组织：根目录仅保留总览 / 状态 / AI 交接，`tracking/` 集中 Roadmap、Issues、Decisions、Changelog；不设 Owner / Assignee。
+- 核对已归档的 Eventhouse Overview **JSON + Markdown 脱敏快照**，统一项目文档为中文；保持上游代码及实际导出原文。
+- KQL 三组候选仅用于只读验证；**未修改 Eventhouse、Uploader 或 PROD**。
 
-## 2026-11-16 — Raw diagnostics
-- Raw snapshot: 9 logTypes, 647 JSON messages, 3,693 CSV records; 106 observed logType/field combinations. Snapshot is not full ingestion audit.
+## 2026-11-17 — Parser 数据质量验证
+- 完整备份 15 个实际部署 Function Body、142 行 Schema、Update Policy 快照、MCP Overview；15/15 Function Body 与 GitHub 源码一致。
+- QueryExecutionAggregation Dry-run：77 条，Query Duration 三列各 77 非空，Data Processing Duration 三列各 56 非空。
+- QueryStreaming Dry-run：113 条，两个时长指标各 104 非空。
+- MashupEvaluation Dry-run：91 条，五个 Memory / Processor 指标均 91 非空。
+- 已生成 Schema Check KQL、Candidate 与 Rollback；**全部尚未在 POC 执行 Function DDL**。
 
-## 2026-11-13 — live Gateway report upload POC
-- Eight types of Gateway Report processed via Move → Temp → Eventstream → History; HTTP 201 observed; Gateway recreated files. UploadLogs Task configured for private `Config.live-poc.json`. Continuous exactly-once validation pending.
-- PROD historical backfill deferred pending event-time staging plan.
+## 2026-11-16 — Eventhouse Raw 样本
+- Raw 快照包含 9 种 `logType`、647 条 JSON Message、3693 条 CSV Record；字段统计有 106 个 Type/Field 组合。不是全量数据完整性证明。
 
-## 2026-11-12 and before — functionality
-- Fabric artifacts deployed; functional Gateway, Heartbeat, NodeInfo, System Counters and Jobs/Queries views checked. See [POC_STATUS](docs/POC_STATUS.md) for complete observations.
+## 2026-11-13 — 实际 Gateway 日志上传
+- 8 类 Report 经 `Move → Temp → Eventstream HTTP 201 → History`；Gateway 之后重新创建同名文件；定时任务切换至私有 `Config.live-poc.json` 运行。
+- PROD 首次回传计划使用单独 Staging、按真实事件时间筛选；未验证高可靠性。
 
-Update this log only for a significant verified milestone, test result, problem or design decision. Link evidence and specify what remained unverified.
+## 2026-11-12 及之前 — 基本功能
+- Eventstream、Eventhouse、Semantic Model、Gateway Report 已安装并进行基础验证；详情在 [POC 实测记录](../docs/POC_STATUS.md)。
+
+**维护原则：** 每次有重要测试/决策，附日期与证据链接，再更新 `STATUS`，不复制一整篇历史结论。

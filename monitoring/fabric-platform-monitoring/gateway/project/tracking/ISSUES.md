@@ -1,18 +1,18 @@
-# Issue & risk register
+# 问题与风险台账
 
-**Updated:** 2026-11-17 (Asia/Singapore). This register is the canonical backlog index; detailed technical traces live in docs/evidence. Do not close an issue without a dated reproducible result.
+> 更新：2026-11-17（Asia/Singapore）｜当前由我们维护，**不设责任人字段**。一个问题使用固定 ID；详细证据留在 `docs/`、`evidence/`，此处只记录状态与下一动作。
 
-| ID | Priority | Status | First noted | Last reviewed | Responsible | Issue / risk | Next action | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **GW-001** | P1 | **Validating** | 2026-11-17 | 2026-11-17 | TBD | Raw JSON keys mismatch 3 current Parser schemas; parsed durations/memory null | Verify candidate schema/types/values; controlled POC-only Function changes | [Audit](docs/SCHEMA_FIELD_MAPPING_AUDIT.md) · [Dry-run](evidence/2026-11-17/DRYRUN_RESULTS.md) |
-| **GW-002** | P1 | Open | 2026-11-12 | 2026-11-17 | TBD | `Move-Item` of active files; partial batch retry / duplicates / lost records | File/record/batch reconciliation + fault injection | [Lifecycle](docs/ARCHITECTURE_OPERATIONS.md) |
-| **GW-003** | P1 | Open | 2026-11-17 | 2026-11-17 | TBD | Raw retention 1d insufficient for later validation/replay | Review retention/archive and costs before PROD | [MCP inventory](evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
-| **GW-004** | P2 | Planned | 2026-11-17 | 2026-11-17 | TBD | Upload Manifest with source file identity, hash, rows, batch states and audit trail | Design durable manifest and exactly-once/idempotency semantics | [Manifest](docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |
-| **GW-005** | P2 | Decision needed | 2026-11-17 | 2026-11-17 | TBD | Parsed Tables omit some original Raw CSV fields | Decide dashboard-oriented vs full-fidelity long-term retention | [Mapping](docs/SCHEMA_FIELD_MAPPING_AUDIT.md) |
-| **GW-006** | P2 | Open | 2026-11-13 | 2026-11-17 | TBD | Multi-node isolation, initial PROD backfill and event-time cutoff | Staging/cutoff and rollout design | [Operations](docs/ARCHITECTURE_OPERATIONS.md) |
-| **GW-007** | P2 | Open | 2026-11-17 | 2026-11-17 | TBD | QueryText, DataSource URLs, permissions and secrets privacy | Security & least-privilege review | [Operations](docs/ARCHITECTURE_OPERATIONS.md) |
-| **GW-008** | P3 | Open | 2026-11-17 | 2026-11-17 | TBD | CopyExecutionReport source never observed; two Parser docstrings inaccurate | Source-triggered test and cosmetic clean-up later | [MCP inventory](evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
+| ID | 优先级 | 状态 | 首次记录 | 最后复核 | 问题 / 风险 | 下一动作 | 证据 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **GW-001** | P1 | **验证中** | 2026-11-17 | 2026-11-17 | KQL Parser 的 Raw Key 错配导致 Parsed 指标全 null | Schema、类型、值校验后 POC 修复 | [字段审计](../docs/SCHEMA_FIELD_MAPPING_AUDIT.md) · [Dry-run](../evidence/2026-11-17/DRYRUN_RESULTS.md) |
+| **GW-002** | P1 | 待验证 | 2026-11-12 | 2026-11-17 | 活动日志 Move、部分 Batch 失败/重试、重复/遗漏风险 | 文件/行数/批次对账与故障测试 | [文件生命周期](../docs/ARCHITECTURE_OPERATIONS.md) |
+| **GW-003** | P1 | 待决策 | 2026-11-17 | 2026-11-17 | Raw 仅保留 1 天，回放及长期审计受限 | 评估 Retention / Archive 成本与恢复策略 | [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
+| **GW-004** | P2 | 设计中 | 2026-11-17 | 2026-11-17 | PROD 需 Upload Manifest 追踪 File、Hash、Rows、Batch Status | 确定快照、幂等与持久化设计 | [设计草案](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |
+| **GW-005** | P2 | 待决策 | 2026-11-17 | 2026-11-17 | Parsed Tables 没有保留全部 Raw 字段 | 明确长期分析需全量字段还是标准化指标 | [字段矩阵](../docs/SCHEMA_FIELD_MAPPING_AUDIT.md) |
+| **GW-006** | P2 | 待验证 | 2026-11-13 | 2026-11-17 | 多节点隔离与 PROD 首轮 Backfill 边界 | 按事件时间和独立 Staging 规划 | [架构运维](../docs/ARCHITECTURE_OPERATIONS.md) |
+| **GW-007** | P2 | 待验证 | 2026-11-17 | 2026-11-17 | QueryText、DataSource、Secrets 与安全审计 | PROD 之前开展权限与隐私评估 | [架构运维](../docs/ARCHITECTURE_OPERATIONS.md) |
+| **GW-008** | P3 | 待验证 | 2026-11-17 | 2026-11-17 | CopyExecutionReport 暂无源样本；部分 Function DocString 错误 | 产生对应日志后验证，文字错误后续清理 | [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
 
-**Status definitions:** Open = not started/resolved; Validating = candidate or investigation under test; Planned = design decision approved for exploration, not implemented; Closed = evidence and verification documented. Project uses internal issue IDs; GitHub Issues may be introduced later with cross-references, but no duplicated issue status systems.
+**状态定义：** 验证中 = 已有候选方案但未最终通过；待验证 = 尚无合格的实测结果；待决策 = 需要权衡方案；设计中 = 尚未实施；已关闭 = 附日期、验证证据及结果。不要根据“脚本执行成功”提前关闭问题。
 
-**Accountability:** `Responsible = TBD` is intentional; no business owner or engineering assignee has been authorized. Set actual owner and target date when agreed, and update `Last reviewed` when evidence is rechecked. Do not invent completion timestamps.
+如将来真正使用 GitHub Issues，只保留一个权威状态来源，本文件改为索引，避免双重维护。
