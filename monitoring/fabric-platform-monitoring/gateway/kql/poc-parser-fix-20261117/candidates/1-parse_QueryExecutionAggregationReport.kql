@@ -1,0 +1,21 @@
+// POC CANDIDATE ONLY. Not validated in a live KQL engine. Do NOT apply before dry-run tests.
+// May cause transactional source ingestion failure if schema/type incompatible.
+.create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from QueryExecutionAggregationReport") parse_QueryExecutionAggregationReport() {
+['GatewayReports-Raw']
+| where logType == "QueryExecutionAggregationReport"
+| mv-expand record = log
+| project
+    GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+    AggregationStartTimeUTC = todatetime(record.AggregationStartTimeUTC),
+    AggregationEndTimeUTC = todatetime(record.AggregationEndTimeUTC),
+    DataSource = parse_json((replace_strings(dynamic_to_json(record.DataSource),dynamic(['["','"]','\\"']),dynamic(['[',']','"'])))),
+    Success = tostring(record.Success),
+    AverageQueryExecutionDuration_ms_ = toreal(record["AverageQueryExecutionDuration(ms)"]),
+    MaxQueryExecutionDuration_ms_ = tolong(record["MaxQueryExecutionDuration(ms)"]),
+    MinQueryExecutionDuration_ms_ = tolong(record["MinQueryExecutionDuration(ms)"]),
+    QueryType = tostring(record.QueryType),
+    AverageDataProcessingDuration_ms_ = toreal(record["AverageDataProcessingDuration(ms)"]),
+    MaxDataProcessingDuration_ms_ = tolong(record["MaxDataProcessingDuration(ms)"]),
+    MinDataProcessingDuration_ms_ = tolong(record["MinDataProcessingDuration(ms)"]),
+    Count = tolong(record.Count)
+}
