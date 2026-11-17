@@ -149,3 +149,14 @@ PROD 的样例 VM 发现数十个 Performance Log 历史文件，部分接近 10
 - **安全/变更：** 2026-11-17 未修改运行中的 Parser、Table 或 Update Policy；仅 GitHub 文档和证据备份。`main` 未修改。未经全面验收不升级为 PROD。
 
 详细问题、复现查询、后续修复路线：**[PARSER_SCHEMA_AUDIT.md](PARSER_SCHEMA_AUDIT.md)**；部署源码和实际导出：**[Baselines](baselines/2026-11-17/README.md)**；PROD 追踪设计需求：**[Upload Manifest](PROD_UPLOAD_MANIFEST_DESIGN.md)**。
+
+
+## 9. 2026-11-17 — 完整部署 KQL Baseline + 修复候选（尚未部署）
+
+- 用户提供完整 `.show functions` CSV，**15/15 部署 Function Body** 与 fork `DatabaseSchema.kql` 源码（忽略空白）一致。并提供 `.show database schema` **142 行**；MCP Overview 记录 **12 Tables / 10 transactional Update Policies / 2 healthy MVs / 156,878 rows** 的瞬时库存。
+- 备份已写入 [2026-11-17 baselines](baselines/2026-11-17/README.md)，删除数据库/群集/Policy Owner ID 等环境标识，保留 15 个原始 Function Body 和 Schema 列/类型/顺序。不是整库物理备份或生产配置导出。
+- 完成 [8 个 Report 类型 + GatewayNodeInfo 原始字段与 Parsed 表列对照](SCHEMA_FIELD_MAPPING_AUDIT.md)；确认 QEA 6 个 Duration 列、QueryStreaming 2 个 Duration 列、Mashup 5 个待映射列。不同于这些缺陷，OpenConnection 和 QueryExecution 的 `(ms)` 字段目前由旧 parser 正确读取，再按目标顺序输出，不应整体盲改。
+- 创建 **3 套候选 Patch / 3 套只读 Dry-run / 3 套 Rollback**：[kql/poc-parser-fix-20261117](../kql/poc-parser-fix-20261117/README.md)。目前只是 GitHub 文件，**未在 Eventhouse 执行任何 DDL / 修复 / 回填**，也尚未通过实际 KQL Dry-run。
+- 本轮新关注点：Raw 观察到的 QueryExecution 2 个独有 Duration 字段、QueryStreaming 3 个独有字段、Mashup 的原始 DataSource/RequestId 不保存在标准 Parsed Tables；PROD 是否需要保留全部 Raw 字段要独立决策。
+
+**下一行动：** 在 POC Queryset 分别运行三个 dry-run，检查非空率、列名/列序/类型和 DataSource/单位样本。先核验 POC、再审查变更、最后部署。保留 GitHub 为 Source of Truth。
