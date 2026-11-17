@@ -1,6 +1,6 @@
 # Gateway Monitoring｜POC 进展与验证证据
 
-> **记录截至 2026-11-13。** 这是一次 Windows On-premises Data Gateway **单 Cluster、单 Node** POC 的实测结果；不能代表所有 Gateway 节点或 Fabric Platform Monitoring 模块。
+> **记录截至 2026-11-17。** 这是一次 Windows On-premises Data Gateway **单 Cluster、单 Node** POC 的实测结果；不能代表所有 Gateway 节点或 Fabric Platform Monitoring 模块。
 
 [返回总览](../POC_README.md) · [继续部署](DEPLOYMENT_RUNBOOK.md) · [已发现问题](TROUBLESHOOTING.md)
 
@@ -8,7 +8,7 @@
 
 **已完成：** 核心端到端链路；NodeInfo、Heartbeat 实测；8 类真实 POC Performance Logs 首次 Move/上传/History 归档成功，Gateway 重新生成同名日志后继续写入。  
 **进行中（2026-11-13）：** `Gateway-UploadLogs` 采用 `Config.live-poc.json` 已启用并显示 Running，Heartbeat Running、NodeInfo Ready。**任务状态不等于数据完整性验收。**  
-**尚未完成：** 连续多轮采集无遗漏/重复、失败恢复、Running Jobs / Job Details、多 Cluster/Node、PROD 首次回传及长期治理。
+**新发现（2026-11-17）：** Eventhouse Raw 中已见 9 类 logType；Parsed 的 3 个关键数值字段全部为 null（源 Raw 有非空值），已证实部署 Parser 字段映射与 Raw 不一致。已备份源码及三个部署 Function Body，**修复未应用**。\n**尚未完成：** Parser 全字段修复/回归、连续多轮采集无遗漏/重复、失败恢复、Running Jobs / Job Details、多 Cluster/Node、PROD 首次回传及长期治理。
 
 ## 1. 验证矩阵
 
@@ -135,3 +135,17 @@ PROD 的样例 VM 发现数十个 Performance Log 历史文件，部分接近 10
 - [ ] 复核网络、Service Account 权限、敏感 QueryText、Eventhouse Retention 与 Fabric 成本。
 
 **当前不应称为“Production Ready”**。本页记录的是已完成的功能性 POC 与正在观察的原始 Uploader 持续采集，不能替代生产可靠性验收。
+
+
+## 8. 2026-11-17 — Eventhouse Raw / Parsed 数据质量专项验证
+
+- **Raw 入库快照（2026-11-16 ~02:59 UTC）：** 9 种 `logType`、647 个 Envelope、3,693 条 CSV Records。其中 8 种为 Gateway Report，`GatewayNodeInfo` 来源独立脚本。该快照不能证明全量上传、无重复。
+- **Raw 字段清单：** 106 个类型/字段组合，详情见 [字段备份](baselines/2026-11-17/RawFieldInventory.export.csv)；同类样本字段存在，但某些值正常为空。
+- **Parsed（2026-11-17 ~06:24 UTC）：** `QueryExecutionReport.QueryExecutionDuration_ms_` 4,595/4,595 非 null；`QueryExecutionAggregationReport.AverageQueryExecutionDuration_ms_` 0/2,935；`QueryStreamingReport.StreamingDuration_ms_` 0/2,346；`MashupEvaluationReport.[AverageCommit byte]` 0/1,892。
+- **Raw 的对应字段仍有值（~06:31 UTC）：** `AverageQueryExecutionDuration(ms)` 73/73、`StreamingDuration(ms)` 81/90、`AverageCommit(byte)` 77/77。不同层级留存/采集时间窗口不可混为一谈。
+- **KQL 配置：** 导出的 14 条表 Update Policy 中，10 个 Parsed Target Policy 开启，来自 `GatewayReports-Raw`；24 小时 `OriginatesFromUpdatePolicy` ingestion-failure 查询为空。这不代表无静默字段映射错误。
+- **实际部署函数：** 3 个 `.show functions` Function Body 与分支中的 `DatabaseSchema.kql` 对应源码一致。**仅这 3 个函数已保存实际部署备份；并非完整生产 Schema 导出。**
+- **本地 Report 文件分布：** 42 个（40 `History` merge 文件，2 `Source`），覆盖 8 种 Report。`History` 不是逐文件上传审计证据。
+- **安全/变更：** 2026-11-17 未修改运行中的 Parser、Table 或 Update Policy；仅 GitHub 文档和证据备份。`main` 未修改。未经全面验收不升级为 PROD。
+
+详细问题、复现查询、后续修复路线：**[PARSER_SCHEMA_AUDIT.md](PARSER_SCHEMA_AUDIT.md)**；部署源码和实际导出：**[Baselines](baselines/2026-11-17/README.md)**；PROD 追踪设计需求：**[Upload Manifest](PROD_UPLOAD_MANIFEST_DESIGN.md)**。
