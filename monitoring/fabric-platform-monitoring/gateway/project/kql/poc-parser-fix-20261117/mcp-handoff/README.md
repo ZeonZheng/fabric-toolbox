@@ -25,3 +25,8 @@
 证据：[2026-11-17](../../../evidence/2026-11-17/README.md) · [状态](../../../STATUS.md) · [GW-001](../../../tracking/ISSUES.md)。
 
 **说明：** 这四份 Preflight KQL 作为本地 AI 执行输入，已提交 GitHub，但尚未通过用户的 `eventhouse-remote` MCP 实际调用验证。如果 MCP 不支持管理查询，说明受限并仅执行其支持的只读操作。
+
+
+## 可直接发给本地 AI 的完整 Prompt（含 URL 和输出契约）
+
+请使用 [LOCAL_AI_PROMPT.md](LOCAL_AI_PROMPT.md)。其包含**完整 GitHub 地址、指定工作分支、四份查询链接、15 Function 基线地址、逐项状态与结果表格、单个中文 Markdown 报告及 ChatGPT 交接要求**。本 README 保留简版技术说明；对外执行指令以该 Prompt 为准。
