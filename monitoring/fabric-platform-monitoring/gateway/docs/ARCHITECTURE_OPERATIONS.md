@@ -1,6 +1,6 @@
 # Gateway Monitoring｜架构、日志生命周期与后续技术决策
 
-> **决策更新（2026-11-13）：** 已在 POC 单节点验证真实 Performance Logs Move 后自动重建并继续写入，原始 Uploader Task 已启动连续观察。**仍未经生产可靠性验收。**  
+> **决策更新（2026-11-17）：** 已在 POC 单节点验证真实 Performance Logs Move 后自动重建并继续写入，原始 Uploader Task 已启动连续观察。**仍未经生产可靠性验收。**  
 > **下一步：** 验证多轮完整性、断网/部分上传后的恢复与资源开销；若原始 Uploader 不达标，再评估只读 Tail/Checkpoint 或企业日志平台。
 
 [返回总览](../POC_README.md) · [部署指南](DEPLOYMENT_RUNBOOK.md) · [现状与 Backlog](POC_STATUS.md)
@@ -162,3 +162,14 @@ C:\Users\powrbi\AppData\Local\Microsoft\On-premises data gateway\Report\
 - [ ] 定义企业监控告警、值班、失败重试和回滚方案。
 
 **结论：** 原始 Uploader 已在 POC 首轮真实日志验证并开始持续运行，Fabric 后端与报表链路已有静态副本证据。当前必须核验连续性、异常恢复、端到端行数和 PROD 首次导入范围（使用独立 Staging，按事件时间而非文件名日期筛选）；不声明 Production Ready。
+
+
+## 7. 2026-11-17 数据质量与 PROD Traceability 决策
+
+**GitHub 作为 Single Source of Truth：** 在本分支 Gateway 子目录维护原始 Schema 快照、部署函数导出、字段审计及后续 KQL Patch；不将人工在 Eventhouse 中修改作为唯一最终资产。Jumpstart 更新可能覆盖 Eventhouse 自定义对象。
+
+**已确认问题：** 经过 Raw 与 Parsed 对比，三个关键字段在 Parsed 中全 null，而 Raw 存在非空值。当前 Parser 仍是仓库旧定义，没有修复；详见 [专项审计](PARSER_SCHEMA_AUDIT.md)。Raw 与 Parsed 的差异不一定来自上传；先隔离 Parser 层。
+
+**PROD 需求（规划中，非已实现）：** 在决定是否采用原始 Uploader 前，评估**Upload Manifest**：每个源文件类型、源文件名/Node/FileIdentity、稳定快照 Hash、记录数、分批状态、接收状态、Raw/Parsed 校验、重试/错误、真实事件时间窗口。HTTP 201 ≠ 端到端成功，History 合并 ≠ 单文件可追踪。需同时设计幂等/去重、活跃文件快照与多节点隔离。详见 [Upload Manifest 设计候选](PROD_UPLOAD_MANIFEST_DESIGN.md)。
+
+**PROD Gate：** 完成 Parser 字段映射修复、受控回归、连续采集/失败恢复、隐私审查和 Manifest 设计评审后，再决定推广。当前 POC 不可描述为 Production Ready。
