@@ -1,15 +1,19 @@
-# POC Parser — schema compatibility checks
+# POC Parser｜Schema 兼容性检查（只读）
 
-**All queries are READ-ONLY; do not run candidate DDL until these pass.**
+> **本目录的三个 Query 不修改 Eventhouse。** 不通过前禁止运行 `../candidates/` 中的 Function DDL。
 
-For each target, open the schema-check script (links below) in the POC KQL Queryset. It defines a local `Candidate()`, runs `getschema` for Candidate and existing target table, and joins schemas by `ColumnOrdinal`. The output reports field name and type matches; **all `IsMatch` must be true**. A missing column appears with an empty name on one side.
+**目的：** 通过 `getschema` 对比 Candidate() 与现有 Parsed Table 的列定义，包括 `ColumnOrdinal`（顺序）、`ColumnName`（字段名）、`ColumnType`（类型）。脚本使用 `join kind=fullouter`，因此某一侧缺少字段也能显示出来。
 
-- [Aggregation schema check](1-schema-check-parse_QueryExecutionAggregationReport.kql)
-- [Streaming schema check](2-schema-check-parse_QueryStreamingReport.kql)
-- [Mashup schema check](3-schema-check-parse_MashupEvaluationReport.kql)
+| 类型 | 查询 |
+| --- | --- |
+| QueryExecutionAggregationReport | [Schema Check 1](1-schema-check-parse_QueryExecutionAggregationReport.kql) |
+| QueryStreamingReport | [Schema Check 2](2-schema-check-parse_QueryStreamingReport.kql) |
+| MashupEvaluationReport | [Schema Check 3](3-schema-check-parse_MashupEvaluationReport.kql) |
 
-Microsoft Kusto requires update-policy query output schema to match target table name, type and order. Source: https://learn.microsoft.com/en-us/kusto/management/alter-table-update-policy-command?view=microsoft-fabric
+**预期：** 每行 `IsMatch = true`，且字段数、列顺序与现有目标表一致。若有 `false`、null、缺行或错误，**不要部署**，应先修复 Candidate。
 
-**If any output row differs, stop.** Do not alter the function or policy. Report results in [evidence](../../../evidence/2026-11-17/DRYRUN_RESULTS.md).
+注意这只是类型兼容检查。仍须用 Raw 样本比较实际数值、DataSource 解析和 `TotalProcessorTime(ms)` → timespan 的单位；只读 Dry-run 通过不代表这些自动正确。
 
-Beyond schema, still check sample numeric values/units, especially `TotalProcessorTime(ms)` → Kusto `timespan`, and DataSource behavior. The successful non-null dry-runs do not prove those.
+执行证据保存到：[DRYRUN_RESULTS.md](../../../evidence/2026-11-17/DRYRUN_RESULTS.md)。当前下一步以 [STATUS](../../../STATUS.md) 为准。
+
+官方文档：[Kusto Update Policy](https://learn.microsoft.com/en-us/kusto/management/update-policy)。

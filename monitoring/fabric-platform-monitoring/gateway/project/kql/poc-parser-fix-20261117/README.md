@@ -1,50 +1,38 @@
-# POC Parser remediation — candidates only (2026-11-17)
+# POC Parser 修复工作区（2026-11-17）
 
-**No patch in this directory has been applied to Eventhouse.** This is a candidate set for the user's single-node Gateway Monitoring POC. **Not for PROD and not yet syntax- or ingestion-validated.**
+> **注意：目前所有 Patch 仅存在于 GitHub，未执行 Eventhouse Function DDL。** 本目录只用于单节点 POC 的验证与修复候选，不允许直接部署 PROD。
 
-## Exact scope
+## 范围与安全边界
 
-- **No Uploader / Task / Eventstream / Update Policy / Table changes.**
-- **Only three existing stored Functions** are candidates for later `.create-or-alter function`.
-- Existing target schema, **column order and types retained**; no new target columns. Function code reads the original CSV JSON key names explicitly, converts to expected KQL types, and projects values in target order.
-- `MashupEvaluationReport.DataSourceKinds` and `DataSourcePaths` are deliberately not synthesized from `DataSource` because their semantics are not established. This is not yet a full-field preservation solution.
+- 不修改 Gateway Uploader、Task Scheduler、Eventstream、现有 Parsed Table 或 Update Policy。
+- 候选修改仅涉及 3 个现有 Function：`parse_QueryExecutionAggregationReport`、`parse_QueryStreamingReport`、`parse_MashupEvaluationReport`。
+- 第一轮尽量保持目标 Schema 的列顺序和类型，显式读取 Raw JSON 中的 `(ms)` / `(byte)` 字段，再转换为目标名称。
+- `MashupEvaluationReport.DataSourceKinds` 和 `DataSourcePaths` 无对应原始 Key，暂不从 `DataSource` **捏造含义**；这次修复不代表长期完整保留全部 CSV 字段。
 
-## Files
+## 子目录：按执行风险排列
 
-| Folder | Purpose |
-| --- | --- |
-| `schema/` | **READ-ONLY** KQL `getschema` comparison of Candidate vs target type/order/name; run after successful dry-run |\n| `dryrun/` | **READ-ONLY** KQL using `let Candidate = () {...}` and `summarize`; safe first execution |
-| `candidates/` | **MUTATING** `.create-or-alter function` commands, one per file; **do not run yet** |
-| `rollback/` | Restore exact 3 exported deployed Function bodies through `.create-or-alter function` wrappers. Use only after verifying current live state |
+| 子目录 | 是否改写 Eventhouse | 用途 |
+| --- | --- | --- |
+| [dryrun/](dryrun/) | **否（只读）** | `let Candidate = () {...}`，用非空计数初步验证 |
+| [schema/](schema/README.md) | **否（只读）** | 用 `getschema` 对比 Candidate 与目标表列名/顺序/数据类型 |
+| [candidates/](candidates/) | **是（变更 Function）** | 每个文件含 `.create-or-alter function`；**现在禁止运行** |
+| [rollback/](rollback/) | **是（回滚 Function）** | 以实际部署导出的旧 Body 恢复，必须确认现场版本后使用 |
 
-Full live Function baseline: [DeployedFunctions.full.export.csv](../../evidence/2026-11-17/DeployedFunctions.full.export.csv).
-Target schema baseline: [DeployedTableSchema.sanitized.csv](../../evidence/2026-11-17/DeployedTableSchema.sanitized.csv).
-Mapping audit: [SCHEMA_FIELD_MAPPING_AUDIT.md](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md).
+备份：[15 个实际 Function Body](../../evidence/2026-11-17/DeployedFunctions.full.export.csv) · [142 行 Schema](../../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) · [字段审计](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md)。
 
-## Recommended execution procedure
+## 验证步骤与当前证据
 
-1. **Make a non-sensitive local snapshot** of the three live Function bodies (`.show functions`) and note the time. Ensure the Queryset is connected to the **POC** KQL database, not PROD.
-2. Run the three `dryrun/` files in KQL Queryset **one by one**. The query result should show `Rows > 0` and relevant `Present_...` counts > 0 for metrics whose Raw values are present. `StreamingDuration` can legitimately be empty for some raw rows.
-3. **Check schema:** Execute the [prebuilt `schema/` queries](schema/README.md). They compare Candidate and target `ColumnName`, `ColumnType`, and `ColumnOrdinal`; if any `IsMatch=false`, **STOP**.
-4. Validate actual values and units: compare the source `record["<CSV key>"]` with the candidate output for a small set of rows using `RequestId`/`QueryTrackingId` or reliable event timestamp; validate DataSource structure, numeric precision and `TotalProcessorTime` milliseconds-to-timespan.
-5. Only after these pass, apply **one** `candidates/` command at a time in POC. Watch ingestion/errors immediately: `.show ingestion failures`, Eventstream destination metrics, Raw count and parsed count. Roll back with matching `rollback/` command if problems appear.
-6. Validate **newly ingested** events after the change; existing parsed null values are not recomputed automatically. Plan any history backfill separately with duplication controls.
-7. Update project's test results and then decide whether to patch `DatabaseSchema.kql` in the fork and eventually PROD. Do not re-run Jumpstart `update_existing=True` without reviewing overwrites.
+1. 已完成：3 个 `dryrun/` 查询成功，Aggregation 77 Rows、Streaming 113 Rows、Mashup 91 Rows，具体非空率见 [证据](../../evidence/2026-11-17/DRYRUN_RESULTS.md)。
+2. **待执行：** 运行 [3 个 schema 查询](schema/README.md)，核对所有 `ColumnOrdinal`、`ColumnName`、`ColumnType` 的 `IsMatch`；任意不一致立即停止。
+3. 待执行：对照真实 Raw JSON 和 Candidate 的代表性值、`DataSource` 结构、Numeric Precision、`TotalProcessorTime(ms)` → timespan。
+4. 通过后才评审 `candidates/`：在 **POC** 中每次只更新一个 Parser，记录精确部署时间、Git Commit SHA、对应 Rollback。
+5. 部署后检查新摄入记录、Update Policy、Eventstream 指标和 Ingestion Failures；旧 Parsed null **不会自动修复**，历史回填需单独设计。
+6. 全部验证完成后，再把认可的修复应用到 GitHub 的正式 Schema 源码定义；不要未经评估就运行 Jumpstart `update_existing=True`。
 
-## Known risks and incomplete acceptance
+## 特别风险
 
-- Existing update policies are **transactional**: a bad function change may cause the source ingestion to fail. The update policy may not validate all references when a function body changes. Microsoft docs: https://learn.microsoft.com/en-us/kusto/management/update-policy
-- Kusto's project/expressions and output types must be verified **on the actual POC engine**. No remote KQL code execution has been done in this commit.
-- The original DataSource normalization expression is preserved as written in the deployed functions, but this replacement changes its input expression from unpacked `DataSource` to `record.DataSource`: compare sample values in dry-run.
-- Raw may contain more fields than the Parsed Table's existing columns. This patch addresses selected broken mappings only—not full-field retention or uploader delivery completeness.
-- Applying changes only through Eventhouse UI will create Git/live drift. Once tested, carry approved source changes in Git and document deployment/rollback commit SHA.
+当前 Update Policies 使用 `IsTransactional=true`。如果函数输出与目标表 Schema 不匹配，可能影响 Raw 摄入；仅 Dry-run 的非空验证不足以保证线上数据完整性。Kusto 源码里的 DataSource 标准化表达式已调整输入对象为 `record.DataSource`，需要逐值核对结构。
 
+Microsoft 参考：[Update Policy](https://learn.microsoft.com/en-us/kusto/management/update-policy)。
 
-## 2026-11-17 first dry-run outcomes (user-executed)
-
-- QueryExecutionAggregation: 77 rows; 3 query-duration outputs 77 nonnull each, 3 processing-duration outputs 56 nonnull each.
-- QueryStreaming: 113 rows; both duration outputs 104 nonnull each.
-- MashupEvaluation: 91 rows; five selected metrics 91 nonnull each.
-- **These are read-only function candidate results only; no Eventhouse DDL has been applied.** Next: check candidate `| getschema`, target column order/types, DataSource preservation and TotalProcessorTime units before applying anything.
-
-[Current project status](../../STATUS.md) · [dated evidence](../../evidence/2026-11-17/DRYRUN_RESULTS.md).
+**唯一最新进度：[STATUS.md](../../STATUS.md)**。避免在脚本说明里重复维护项目当前阶段。

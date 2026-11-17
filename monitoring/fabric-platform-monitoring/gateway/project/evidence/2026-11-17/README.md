@@ -1,16 +1,28 @@
-# Gateway Monitoring — 2026-11-17 POC baseline
+# Eventhouse POC 部署基线｜2026-11-17
 
-This directory is an **evidence snapshot, not a production-ready patch**. Scope: single Gateway cluster/node POC; all data collected from the user's KQL Queryset and their GitHub fork on 2026-11-17.
+> **环境：** 单 Cluster / Node POC。来源：用户在 Eventhouse KQL Queryset 及 Remote MCP 的实测导出，加上 GitHub fork 源码。  
+> **用途：** 修复前可追溯的 Schema/Function 定义与结构快照；**不是整个 Eventhouse 的物理备份，也不是已部署的修复补丁。**
 
-| Artifact | Provenance | Coverage / limitation |
+## 文件清单与来源
+
+| 文件 | 来源 | 具体用途及限制 |
 | --- | --- | --- |
-| `DatabaseSchema.source.kql` | Fork source `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql` at blob SHA `10e94c1ec71102283f6f93c9ff05da705db77ab8` | **Source baseline only**: this is NOT a full live Eventhouse schema export. |
-| `DeployedParserFunctions.export.csv` | Eventhouse `.show functions | where Name in (...) | project Name, Body` user export (5) | **Actual deployed bodies of 3 functions only**: `parse_QueryExecutionAggregationReport`, `parse_QueryStreamingReport`, `parse_MashupEvaluationReport`. Other live functions have not been backed up. |
-| `DeployedUpdatePolicies.sanitized.json` | User Eventhouse `.show table * policy update` export (4) | 14 table entries; environment-specific database GUIDs removed from EntityName. No guarantee of identical full original export metadata. |
-| `DeployedFunctions.full.export.csv` | Actual `.show functions | project Name, Parameters, Body, Folder` user export (6) | **All 15 live Function Bodies**, exact export; verified 15/15 Bodies match GitHub source by whitespace-normalized comparison. |\n| `DeployedTableSchema.sanitized.csv` | `.show database schema` user export (7) | **142 schema rows**, DatabaseName stripped to avoid saving environment identifier. Includes tables, column names/types/order. |\n| `EventhouseOverview.MCP.sanitized.json` / `.md` | User-supplied MCP overview | Snapshot of 12 tables, 10 update policies, 2 materialized views, counts/retention. Database GUID / cluster / policy owner IDs removed; not a byte-for-byte runtime export. |\n| `RawFieldInventory.export.csv` | User query export (3) from `GatewayReports-Raw` | 106 (logType, field) presence/non-empty stats sampled while Raw retained. **Not actual raw events, and not a complete schema history**. |
+| [DatabaseSchema.source.kql](DatabaseSchema.source.kql) | fork 原始 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，Blob SHA `10e94c1ec71102283f6f93c9ff05da705db77ab8` | **上游源码快照**，不能当作完整的运行时 Eventhouse 导出 |
+| [DeployedFunctions.full.export.csv](DeployedFunctions.full.export.csv) | KQL `.show functions` 用户导出 (6) | **实际部署的 15 个 Function Body**，与当时 GitHub 源码逐一对照 15/15 一致 |
+| [DeployedParserFunctions.export.csv](DeployedParserFunctions.export.csv) | KQL 用户导出 (5) | 早期单独保存的 3 个 Parser Body；属于上一个更小范围的证据 |
+| [DeployedTableSchema.sanitized.csv](DeployedTableSchema.sanitized.csv) | `.show database schema` 用户导出 (7) | **142 行列结构**，包含列名、类型、顺序；已移除 DatabaseName |
+| [DeployedUpdatePolicies.sanitized.json](DeployedUpdatePolicies.sanitized.json) | `.show table * policy update` 用户导出 (4) | 14 个表策略记录，去除实体中数据库标识；10 个解析目标有启用策略 |
+| [RawFieldInventory.export.csv](RawFieldInventory.export.csv) | 用户 Raw JSON 字段统计导出 (3) | 106 个 logType/字段组合的存在性/非空统计；**不包含实际 Raw 行** |
+| [EventhouseOverview.MCP.sanitized.json](EventhouseOverview.MCP.sanitized.json) | 用户通过 Eventhouse Remote MCP 生成的结构 Overview | **12 Tables、15 Functions、10 Update Policies、2 Materialized Views** 以及 Retention、库存行数；去除部分环境标识 |
+| [EventhouseOverview.MCP.sanitized.md](EventhouseOverview.MCP.sanitized.md) | 同次 MCP Overview 的 Markdown 说明 | 中文结构总览、数据流、表/列、策略及问题摘要；适合人和 AI 快速查看 |
+| [DRYRUN_RESULTS.md](DRYRUN_RESULTS.md) | 用户 KQL 截图转录 | 3 个 Parser Dry-run 的结果统计，未执行部署 |
 
-**Deployment source of truth:** GitHub fork branch `docs/gateway-monitoring-poc-20261112`. No changes have been applied to the running Eventhouse or its update policies by this backup. 
+## 注意事项
 
-**Security:** no gateway log payloads, query texts, secrets, connection strings, gateway/workspace IDs or runtime Config JSON are stored. If generating a complete live export later, review content before committing; use restricted storage for sensitive values.
+- MCP Overview 采集于 **2026-11-17 14:56 UTC+8**，当时共 156,878 行（各表不同保留期的库存统计，不是 156,878 条去重后的原始事件）。
+- `GatewayReports-Raw` 在快照中保留期 **1 天**；Heartbeat 7 天，许多 Parsed 表 3650 天。物理清理可能不是瞬时完成。
+- 此快照不包括可恢复数据库存储、认证、所有实时连接设置、Secrets 和原始 Gateway 日志，因此**只能用于配置对照及变更前备份**。
+- 原始导出的 SQL/KQL 字段名称、Function Body 保持原文，避免备份被翻译破坏；Markdown 说明采用中文。
+- GitHub 分支 `docs/gateway-monitoring-poc-20261112` 是我们工程资产的 Source of Truth；如后续 Eventhouse Function 修改，必须记录变更及回滚版本。
 
-**Updated 2026-11-17:** All 15 deployed Function bodies and 142 schema rows are now captured, as well as a sanitised MCP overview. The exact 3-function export remains as the earlier narrower evidence. This is not a full Eventhouse service backup: security policies, ingestion connections, identities and original Gateway log payloads are not included. See [field mapping audit](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md).
+参考：[字段对应审计](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md) · [Parser 缺陷](../../docs/PARSER_SCHEMA_AUDIT.md) · [当前状态](../../STATUS.md)。
