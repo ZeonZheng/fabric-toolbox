@@ -1,0 +1,19 @@
+// READ-ONLY PREVIEW: run in Queryset, no function/policy changes.
+let Candidate = () {
+['GatewayReports-Raw']
+| where logType == "QueryStreamingReport"
+| mv-expand record = log
+| project
+    GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+    RequestId = toguid(tostring(record.RequestId)),
+    DataSource = parse_json((replace_strings(dynamic_to_json(record.DataSource),dynamic(['["','"]','\\"']),dynamic(['[',']','"'])))),
+    QueryTrackingId = toguid(tostring(record.QueryTrackingId)),
+    StreamingStartTimeUTC = todatetime(record.StreamingStartTimeUTC),
+    SpoolingDiskReadingDuration_ms_ = tolong(record["SpoolingDiskReadingDuration(ms)"]),
+    StreamingDuration_ms_ = tolong(record["StreamingDuration(ms)"]),
+    Success = tostring(record.Success),
+    ErrorMessage = tostring(record.ErrorMessage)
+};
+Candidate()
+| summarize Rows=count(), Present_SpoolingDiskReadingDurationms = countif(isnotnull(SpoolingDiskReadingDuration_ms_)),
+    Present_StreamingDurationms = countif(isnotnull(StreamingDuration_ms_))
