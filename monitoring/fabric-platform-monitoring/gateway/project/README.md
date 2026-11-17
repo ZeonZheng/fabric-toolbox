@@ -7,7 +7,7 @@
 
 ## 30 秒了解项目
 
-已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项样本无损；DataSource 语义仍待验证，未修改线上 POC Functions。
+已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。进入**受控 POC 上线前 Preflight**，但仍未修改运行中的 Functions。
 
 ## 快速导航（以此处为准）
 

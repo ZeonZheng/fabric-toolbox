@@ -2,6 +2,11 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-17 17:11（UTC+8）— DataSource 只读等价验证通过
+- 用户执行了 `2-datasource-compatibility.kql`，导出 `export (12).csv`，已归档为 `DataSourceCheck-LegacyVsCandidate.csv`。Aggregation 96/96、Streaming 139/139，两类共 235 条 Raw 的 Legacy / Candidate DataSource 输出完全一致（`DifferentSerialized=0`）；两者动态类型集合均为 `array` 和 `string`。
+- Mashup 103 条 Raw 的 `DataSource` 为 string，实际 JSON 中 `DataSourceKinds`、`DataSourcePaths` Key 均 0/103，纳入 GW-005 设计风险；**不在本轮最小 Parser 修复中强行生成字段**。
+- 新增 `kql/poc-parser-fix-20261117/mcp-handoff/`：为本地 Eventhouse Remote MCP 准备 4 个只读 Preflight KQL 和中文 AI 交接指令。**尚未用该本地 MCP 实测**，无 POC Function DDL、无 PROD 变更。
+
 ## 2026-11-17 16:54（UTC+8）— 数值/单位只读验证通过
 - 用户执行 `value-checks/1-parser-value-validation.kql`，导出 `export (11).csv`，已在 evidence 归档。共 **15 项：13 个数值转换指标 + 2 个 DataSource 非空率检查**，涉及 **338 条 Raw 记录**（Mashup 103 / Aggregation 96 / Streaming 139）。
 - 13 个数值项共 **1,276 次非空值转换**：`ConversionLoss=0`、`ChangedByCast=0`（阈值 0.0001），Mashup 的 `TotalProcessorTime(ms)` 经 timespan 毫秒回算未发现超阈值差异。DataSource 的 235 次非空检查未发现空值损失，但**未证明内容等价**。

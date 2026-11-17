@@ -33,6 +33,11 @@
 - Mashup 样本 `156 ms → 00:00:00.1560000`，103 条 Raw 的 `TotalProcessorTime` 毫秒回算未出现超过阈值的差异。
 - `SampleRaw` 与 `SampleCandidate` 分别任意抽样，**不是配对行值**。非空率/阈值通过不等于全部数值精确无误，也未完成 Legacy vs Candidate 的 DataSource 内容等价验证。
 
-**尚待执行：** [DataSource 内容/结构只读对照](../../kql/poc-parser-fix-20261117/value-checks/DATASOURCE_README.md)。之后再做 POC DDL 变更审查。
+## DataSource Legacy / Candidate 等价性验证（2026-11-17 17:11 UTC+8）
+
+[用户导出的完整 CSV](DataSourceCheck-LegacyVsCandidate.csv) 包含三种类型：Aggregation 96/96，Streaming 139/139，Legacy 与 Candidate 的 `LegacyNonEmpty`、`CandidateNonEmpty` 均等于原始非空数，`DifferentSerialized=0`；动态类型集合均含 `array` 和 `string`。Mashup 原始 `DataSource` 103/103 非空、类型 `string`，但 `DataSourceKinds` 和 `DataSourcePaths` 独立 Raw Key 均为 0/103。此检查不包含这些 Mashup 缺失字段的语义转换。
+
+**下一关口：** 在实际 Function 部署前，由本地 [Eventhouse MCP 只读 Preflight](../../kql/poc-parser-fix-20261117/mcp-handoff/README.md) 重新核查现场 Function、Policy、摄入状况和近期错误；仍需人工授权才可进行单个 POC DDL。
+
 
 [相关测试脚本](../../kql/poc-parser-fix-20261117/README.md) · [GW-001](../../tracking/ISSUES.md) · [STATUS](../../STATUS.md)。

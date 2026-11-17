@@ -60,3 +60,10 @@
 - 然后才考虑 POC `.create-or-alter function`，逐个上线/观察，保留 [Rollback](../kql/poc-parser-fix-20261117/README.md)。现有 Parsed 历史 null 不会自动修复。
 
 对问题的完整复现见 [PARSER_SCHEMA_AUDIT.md](PARSER_SCHEMA_AUDIT.md)。对应 Issue：[GW-001](../tracking/ISSUES.md)。
+
+
+## 2026-11-17 17:11（UTC+8）— DataSource 语义验证补充
+
+- Aggregation 96 条 Raw、Streaming 139 条 Raw：Legacy Parser 与 Candidate 的 DataSource 规范化值 **235/235 内容完全一致**（`DifferentSerialized=0`）；动态类型分别观察到 `array` 和 `string`。不是仅仅非空率一致。
+- Mashup 103 条 Raw 中 `DataSource` 字段 103/103 非空，值的 JSON 类型为 `string`；`DataSourceKinds` 和 `DataSourcePaths` 均 **0/103** 出现在原始 JSON Key 中。目标表仍保留这些字段但在本次 Candidate 中不推断值，长期数据语义修复属于 [GW-005](../tracking/ISSUES.md)。
+- 只读检查结果：[CSV](../evidence/2026-11-17/DataSourceCheck-LegacyVsCandidate.csv)。**三个候选的 Dry-run、Schema、数值和适用的 DataSource 等价检查已通过；现场 Function 仍未修改。** 接下来应确认当前部署/Policy 没有漂移，再安排受控 POC 修改。

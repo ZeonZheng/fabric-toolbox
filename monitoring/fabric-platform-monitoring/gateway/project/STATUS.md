@@ -12,8 +12,8 @@
 | 部署前备份 | **已完成现有材料的基线** | 15 Function Bodies、142 行 Schema、Policy 快照、MCP Overview；非整库物理备份 |
 | Schema 兼容性 | **已通过 39/39** | Aggregation 13/13、Streaming 9/9、Mashup 17/17；CSV 已归档 |
 | 数值及时间单位 | **当前 Raw 样本通过** | 15 项检查中数值项 13 项无转换丢失/超过阈值变化；Mashup 毫秒 → timespan 回算正常 |
-| DataSource 语义等价性 | **待验证（当前关口）** | Aggregation / Streaming 原版 bag_unpack 结果与 Candidate 内容是否相同；Mashup Kinds/Paths 尚无 Raw Key |
-| POC Function 修复 | **未执行** | GitHub 中仅有候选 Patch 与 Rollback，运行中的 Eventhouse 未修改 |
+| DataSource 语义等价性 | **已通过（适用的两种类型）** | Aggregation 96/96、Streaming 139/139，`DifferentSerialized=0`；Mashup Kinds/Paths 独立 Raw Key 均 0/103，保留单独风险 |
+| POC Function 修复 | **准备受控部署评审（尚未执行）** | GitHub 有 3 个 Candidate 与 Rollback；需现场 Preflight 与逐一部署/验证，严禁自动 DDL |
 | PROD 设计 | **未完成** | Upload Manifest、重试/去重、多节点、保留策略、Backfill、隐私/告警 |
 
 ### 最近一次实测（2026-11-17 15:40，UTC+8）
@@ -28,7 +28,9 @@
 
 ### 当前唯一下一步
 
-执行 [**DataSource 语义一致性只读查询**](kql/poc-parser-fix-20261117/value-checks/DATASOURCE_README.md)：对照当前 Legacy Parser 的 bag_unpack 结果与新 Candidate 的规范化 DataSource，要求 `DifferentSerialized=0`（若非 0，检查 dynamic 序列化顺序等原因）；另外统计 Mashup Raw 是否确有 `DataSourceKinds/Paths` Key。此项通过且审查变更风险之后才考虑单个 POC Function DDL。**勿直接运行 candidates/。**
+用本机已连接的 **Eventhouse Remote MCP**，让本地 AI 执行 [只读 Preflight 套件](kql/poc-parser-fix-20261117/mcp-handoff/README.md)：重新读取 3 个当前 Function Body、Update Policies、Raw/Parsed 最新情况与最近 2 小时失败记录；与本分支部署基线核对并返回**脱敏中文报告**。完成现场确认和人工审查后，再决定是否**逐个**应用 POC Parser Patch；**MCP 不得执行 DDL**。
+
+**DataSource 对照已通过（2026-11-17 17:11 UTC+8）：** Aggregation 96/96、Streaming 139/139，Legacy 与 Candidate 全部内容一致（`DifferentSerialized=0`），类型均观察到 `array/string`。Mashup 103 条 Raw 中 `DataSourceKinds`、`DataSourcePaths` 两个 Key 出现 **0 次**，不属于本轮字段映射修复可凭空填充的字段。完整 [CSV](evidence/2026-11-17/DataSourceCheck-LegacyVsCandidate.csv)。该项不代表所有日志字段已完整保存。
 
 **Value Check 已完成（2026-11-17 16:54 UTC+8）：** 103 Mashup + 96 Aggregation + 139 Streaming = 338 条 Raw 记录的 15 项（13 数值 + 2 DataSource 非空率）统计；`ConversionLoss` 全 0，13 个数值项 `ChangedByCast` 全 0（阈值 0.0001），原值与 Candidate 非空次数一致。详情：[CSV](evidence/2026-11-17/ValueCheck-ParserConversions.csv)。
 

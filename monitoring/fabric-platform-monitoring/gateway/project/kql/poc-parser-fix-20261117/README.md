@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | [dryrun/](dryrun/) | **否（只读）** | `let Candidate = () {...}`，用非空计数初步验证 |
 | [schema/](schema/README.md) | **否（只读）** | **已通过 3/3，39/39 列匹配** |
-| [value-checks/](value-checks/README.md) | **否（只读）** | 数值/单位检查已通过；[DataSource 内容等价性查询](value-checks/DATASOURCE_README.md) 待执行 |
+| [value-checks/](value-checks/README.md) | **否（只读）** | 数值/单位检查已通过；[DataSource 内容等价性查询](value-checks/DATASOURCE_README.md) 已通过（235/235） |
 | [candidates/](candidates/) | **是（变更 Function）** | 每个文件含 `.create-or-alter function`；**现在禁止运行** |
 | [rollback/](rollback/) | **是（回滚 Function）** | 以实际部署导出的旧 Body 恢复，必须确认现场版本后使用 |
 
@@ -25,8 +25,8 @@
 
 1. 已完成：3 个 `dryrun/` 查询成功，Aggregation 77 Rows、Streaming 113 Rows、Mashup 91 Rows，具体非空率见 [证据](../../evidence/2026-11-17/DRYRUN_RESULTS.md)。
 2. **已完成：** [3 个 Schema Check](schema/README.md) 全部通过，39/39 列匹配，已归档 CSV (8)/(9)/(10)。
-3. **数值与单位已检查：** 用户 KQL 共 15 项，13 个数值指标 `ConversionLoss=0` 且 `ChangedByCast=0`（阈值 0.0001）；**DataSource 内容等价仍待执行** [只读对照](value-checks/DATASOURCE_README.md)。
-4. 通过后才评审 `candidates/`：在 **POC** 中每次只更新一个 Parser，记录精确部署时间、Git Commit SHA、对应 Rollback。
+3. **数值与单位已检查：** 用户 KQL 共 15 项，13 个数值指标 `ConversionLoss=0` 且 `ChangedByCast=0`（阈值 0.0001）；**DataSource Legacy / Candidate 等价已通过** [只读对照](value-checks/DATASOURCE_README.md)（Aggregation 96/96、Streaming 139/139；Mashup Kinds/Paths Key 不存在）。
+4. 通过后，先用本地 MCP 执行 [只读上线前 Preflight](mcp-handoff/README.md)，确认当前部署版本和更新策略；再人工评审 `candidates/`：在 **POC** 中每次只更新一个 Parser，记录精确部署时间、Git Commit SHA、对应 Rollback。
 5. 部署后检查新摄入记录、Update Policy、Eventstream 指标和 Ingestion Failures；旧 Parsed null **不会自动修复**，历史回填需单独设计。
 6. 全部验证完成后，再把认可的修复应用到 GitHub 的正式 Schema 源码定义；不要未经评估就运行 Jumpstart `update_existing=True`。
 

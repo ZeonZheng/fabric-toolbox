@@ -8,4 +8,4 @@
 - 若发现 `DifferentSerialized > 0`：先人工审阅 KQL 表达式与输出结构（在受限环境处理敏感信息），不能直接合并 Candidate。
 - **限制：** 即使序列化值一致，也不证明 Raw→Parsed 历史数据完整；字符串序列化可能受 dynamic 属性顺序影响，出现差异需进一步判断。不需要将 DataSource 原始值发到聊天或 GitHub。
 
-**当前状态与下一步只看 [STATUS](../../../STATUS.md)**。此脚本未在用户的远程 KQL 引擎执行过。 
+**当前状态与下一步只看 [STATUS](../../../STATUS.md)**。此脚本已于 **2026-11-17 17:11 UTC+8** 在用户 POC KQL Queryset 执行，**235/235 行内容等价**（DifferenceSerialized=0），详见 [CSV 证据](../../../evidence/2026-11-17/DataSourceCheck-LegacyVsCandidate.csv)。下一步以项目 [STATUS](../../../STATUS.md) 为准。 
