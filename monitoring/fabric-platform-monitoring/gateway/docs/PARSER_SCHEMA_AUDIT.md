@@ -79,3 +79,10 @@ Additional gaps **need verification, not yet signed off**:
 - Never commit original `GatewayReports-Raw` events or query texts to GitHub; retain any necessary raw payload evidence in an access-controlled location.
 
 **Acceptance criterion:** verified Raw values are present at the correctly named target fields for newly ingested events, within a controlled window; broader source-to-target mapping and exactly-once completeness remain pending.
+
+
+## Full inventory follow-up (2026-11-17)
+
+- [Full deployed 15 Function Bodies](baselines/2026-11-17/DeployedFunctions.full.export.csv) and [142 schema rows](baselines/2026-11-17/DeployedTableSchema.sanitized.csv) are now backed up from user-provided Eventhouse exports. All 15 live bodies **match** the GitHub source after whitespace normalisation.
+- For exact raw/target field names and supported vs unsupported metrics, see [SCHEMA_FIELD_MAPPING_AUDIT.md](SCHEMA_FIELD_MAPPING_AUDIT.md).
+- Three **unexecuted candidate** parser rewrites, matching read-only dryrun KQL and live-function rollback commands exist under [kql](../kql/poc-parser-fix-20261117/README.md). They are not yet Kusto validated; do not deploy without dry-run and type/order checks.
