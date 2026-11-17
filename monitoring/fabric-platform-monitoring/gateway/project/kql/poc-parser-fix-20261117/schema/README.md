@@ -17,3 +17,7 @@
 执行证据保存到：[DRYRUN_RESULTS.md](../../../evidence/2026-11-17/DRYRUN_RESULTS.md)。当前下一步以 [STATUS](../../../STATUS.md) 为准。
 
 官方文档：[Kusto Update Policy](https://learn.microsoft.com/en-us/kusto/management/update-policy)。
+
+## 运行记录：2026-11-17
+
+已核验用户导出的三个完整 CSV：Aggregation **13/13**、Streaming **9/9**、Mashup **17/17**，共 **39/39** 列 `IsMatch=true`。证据见 [归档目录](../../../evidence/2026-11-17/README.md)。本项已通过；下一道关口是 [数值/单位验证](../value-checks/README.md)，**不要直接部署**。

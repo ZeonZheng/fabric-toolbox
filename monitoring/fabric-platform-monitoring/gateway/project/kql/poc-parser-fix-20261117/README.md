@@ -14,7 +14,8 @@
 | 子目录 | 是否改写 Eventhouse | 用途 |
 | --- | --- | --- |
 | [dryrun/](dryrun/) | **否（只读）** | `let Candidate = () {...}`，用非空计数初步验证 |
-| [schema/](schema/README.md) | **否（只读）** | 用 `getschema` 对比 Candidate 与目标表列名/顺序/数据类型 |
+| [schema/](schema/README.md) | **否（只读）** | **已通过 3/3，39/39 列匹配** |
+| [value-checks/](value-checks/README.md) | **否（只读）** | **待执行**：转换损失、long 截断、时间单位和 DataSource 非空率 |
 | [candidates/](candidates/) | **是（变更 Function）** | 每个文件含 `.create-or-alter function`；**现在禁止运行** |
 | [rollback/](rollback/) | **是（回滚 Function）** | 以实际部署导出的旧 Body 恢复，必须确认现场版本后使用 |
 
@@ -23,8 +24,8 @@
 ## 验证步骤与当前证据
 
 1. 已完成：3 个 `dryrun/` 查询成功，Aggregation 77 Rows、Streaming 113 Rows、Mashup 91 Rows，具体非空率见 [证据](../../evidence/2026-11-17/DRYRUN_RESULTS.md)。
-2. **待执行：** 运行 [3 个 schema 查询](schema/README.md)，核对所有 `ColumnOrdinal`、`ColumnName`、`ColumnType` 的 `IsMatch`；任意不一致立即停止。
-3. 待执行：对照真实 Raw JSON 和 Candidate 的代表性值、`DataSource` 结构、Numeric Precision、`TotalProcessorTime(ms)` → timespan。
+2. **已完成：** [3 个 Schema Check](schema/README.md) 全部通过，39/39 列匹配，已归档 CSV (8)/(9)/(10)。
+3. **待执行：** [只读数值/单位检查](value-checks/README.md)，对照 Raw → Candidate 的转换损失、long 精度、`DataSource` 结构及 `TotalProcessorTime(ms)` → timespan。
 4. 通过后才评审 `candidates/`：在 **POC** 中每次只更新一个 Parser，记录精确部署时间、Git Commit SHA、对应 Rollback。
 5. 部署后检查新摄入记录、Update Policy、Eventstream 指标和 Ingestion Failures；旧 Parsed null **不会自动修复**，历史回填需单独设计。
 6. 全部验证完成后，再把认可的修复应用到 GitHub 的正式 Schema 源码定义；不要未经评估就运行 Jumpstart `update_existing=True`。
