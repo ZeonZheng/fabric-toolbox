@@ -1,6 +1,6 @@
 # Gateway Monitoring｜POC 实施记录
 
-> **更新时间：2026-11-13｜范围：单个 On-premises Data Gateway Cluster / Node**  
+> **更新时间：2026-11-17｜范围：单个 On-premises Data Gateway Cluster / Node**  
 > 本目录记录**实际实施、排障和验证结果**，方便下次继续施工。不是对整个 Fabric Platform Monitoring 项目的完成声明。
 
 ## 当前结论（先看这里）
@@ -11,10 +11,10 @@
 | Gateway NodeInfo | ✅ 已验证 | SPN 获得 Gateway Cluster Admin 后，KQL 元数据完整 |
 | Gateway Heartbeat | ✅ 已验证 | Scheduled Task 后台持续运行，KQL 数据更新 |
 | Performance Logs 上传 | ✅ 首轮真实日志验证 | 8 类活动 Performance Logs 已完成 Move → Eventstream HTTP 201 → History；原目录重新生成文件并继续写入。连续运行质量仍在观察 |
-| Gateway-UploadLogs Scheduled Task | 🟡 Running（观察期） | 2026-11-13 已切换为私有 `Config.live-poc.json`，通过 Task Scheduler GUI 启用并启动；后续需验证持续摄取与数据完整性 |
-| Running Jobs / Job Details、多个节点、Capacity Events 等 | ◻️ 未验证 | 不在这次 Gateway POC 的已验收范围 |
+| Gateway-UploadLogs Scheduled Task | 🟡 Running（观察期） | 2026-11-13 使用私有 `Config.live-poc.json` 启动；2026-11-17 Snapshot：42 Report files（History 40、Source 2）；需继续验证无遗漏/重复 |
+| **Eventhouse Parser 字段映射** | ❌ 已确认缺陷 | 3 个目标性能指标在 Parsed Tables 中全部为 null，但 Raw 有非空值；已备份 3 个部署函数 / schema 源码，**尚未应用修复** |\n| Running Jobs / Job Details、多个节点、Capacity Events 等 | ◻️ 未验证 | 不在这次 Gateway POC 的已验收范围 |
 
-**下一步：** 对当前原始 Uploader 的 **24–48 小时、继而 3–7 天连续采集**进行观察，核对 Eventhouse 记录、重复/遗漏、失败恢复与 Gateway 影响。PROD 先设计首次回传截止点和独立 Staging，不直接对生产日志启动完整历史回传；只读 Tail/Checkpoint 保留为问题出现时的替代方案。
+**下一步：** 优先完成 [Raw → Parsed 字段审计与 POC 修复](docs/PARSER_SCHEMA_AUDIT.md)，验证所有目标指标的映射；同时对当前原始 Uploader 的 **24–48 小时、继而 3–7 天连续采集**进行观察，核对 Eventhouse 记录、重复/遗漏、失败恢复与 Gateway 影响。PROD 先设计首次回传截止点和独立 Staging，不直接对生产日志启动完整历史回传；只读 Tail/Checkpoint 保留为问题出现时的替代方案。
 
 ## 文档导航
 
@@ -24,7 +24,7 @@
 | **遇到报错，快速定位** | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | **确认实际完成了什么** | [POC_STATUS.md](docs/POC_STATUS.md) |
 | **看我们相对官方版本改了什么** | [UPSTREAM_CHANGES.md](docs/UPSTREAM_CHANGES.md) |
-| **理解 Uploader 移动日志的影响与生产方案** | [ARCHITECTURE_OPERATIONS.md](docs/ARCHITECTURE_OPERATIONS.md) |
+| **理解 Uploader 移动日志的影响与生产方案** | [ARCHITECTURE_OPERATIONS.md](docs/ARCHITECTURE_OPERATIONS.md) |\n| **查看 2026-11-17 Parser 数据质量问题与备份** | [PARSER_SCHEMA_AUDIT.md](docs/PARSER_SCHEMA_AUDIT.md) · [Baselines](docs/baselines/2026-11-17/README.md) |\n| **查看 PROD Upload Manifest 需求** | [PROD_UPLOAD_MANIFEST_DESIGN.md](docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |
 | **查看可编辑的架构图** | [Gateway-Monitoring-POC.drawio](docs/Gateway-Monitoring-POC.drawio) |
 | **看两个改造过的 Notebook** | [poc-notebooks/](poc-notebooks/) |
 
