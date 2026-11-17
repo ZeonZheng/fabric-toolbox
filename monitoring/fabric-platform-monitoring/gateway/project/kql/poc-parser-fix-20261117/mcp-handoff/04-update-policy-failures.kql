@@ -1,0 +1,5 @@
+.show ingestion failures
+| where FailedOn > ago(2h)
+| where OriginatesFromUpdatePolicy == true
+| summarize FailureCount=count(), FirstFailure=min(FailedOn), LastFailure=max(FailedOn) by Table, FailureKind
+| order by FailureCount desc

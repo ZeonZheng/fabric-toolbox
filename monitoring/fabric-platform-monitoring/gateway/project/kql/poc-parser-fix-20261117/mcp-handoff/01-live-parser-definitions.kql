@@ -1,0 +1,4 @@
+.show functions
+| where Name in ("parse_QueryExecutionAggregationReport", "parse_QueryStreamingReport", "parse_MashupEvaluationReport")
+| project Name, Parameters, Body, Folder
+| order by Name asc

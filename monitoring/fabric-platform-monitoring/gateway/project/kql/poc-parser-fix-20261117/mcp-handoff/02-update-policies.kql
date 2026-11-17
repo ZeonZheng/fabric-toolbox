@@ -1,0 +1,8 @@
+.show table * policy update
+| where isnotempty(Policy) and Policy != "[]"
+| extend Items = parse_json(Policy)
+| mv-expand P = Items
+| extend FunctionName = tostring(P.Query)
+| where FunctionName in ("parse_QueryExecutionAggregationReport()", "parse_QueryStreamingReport()", "parse_MashupEvaluationReport()")
+| project FunctionName, Source=tostring(P.Source), IsEnabled=tobool(P.IsEnabled), IsTransactional=tobool(P.IsTransactional), PropagateIngestionProperties=tobool(P.PropagateIngestionProperties)
+| order by FunctionName asc

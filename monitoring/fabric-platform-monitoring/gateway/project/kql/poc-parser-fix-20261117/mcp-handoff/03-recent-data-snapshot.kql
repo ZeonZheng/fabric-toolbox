@@ -1,0 +1,21 @@
+// 各表最新时间字段语义不同，跨层行数不可直接相减做完整性结论。
+let Raw =
+    ['GatewayReports-Raw']
+    | where logType in ("QueryExecutionAggregationReport", "QueryStreamingReport", "MashupEvaluationReport")
+    | summarize MessageCount=count(), RowCount=sum(array_length(log)), LatestTime=max(logDate) by logType
+    | extend Layer="Raw (envelope logDate)", TimeKind="logDate";
+let Aggregation =
+    QueryExecutionAggregationReport
+    | summarize RowCount=count(), LatestTime=max(AggregationEndTimeUTC)
+    | extend Layer="Parsed", logType="QueryExecutionAggregationReport", MessageCount=long(null), TimeKind="AggregationEndTimeUTC";
+let Streaming =
+    QueryStreamingReport
+    | summarize RowCount=count(), LatestTime=max(StreamingStartTimeUTC)
+    | extend Layer="Parsed", logType="QueryStreamingReport", MessageCount=long(null), TimeKind="StreamingStartTimeUTC";
+let Mashup =
+    MashupEvaluationReport
+    | summarize RowCount=count(), LatestTime=max(EndTimeUTC)
+    | extend Layer="Parsed", logType="MashupEvaluationReport", MessageCount=long(null), TimeKind="EndTimeUTC";
+union Raw, Aggregation, Streaming, Mashup
+| project Layer, logType, RowCount, MessageCount, LatestTime, TimeKind
+| order by logType asc, Layer asc
