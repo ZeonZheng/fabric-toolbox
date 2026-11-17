@@ -21,7 +21,7 @@
 | Report 仅有 Gateways / Counters | 未上传查询明细、日期不匹配或 Credentials 未配置 | 补两类日志、改日期、Edit credentials |
 | 原始 Gateway 报表文件被长期追加 | 文件名旧时间戳 ≠ 物理创建/事件日期 | 2026-11-13 单节点 POC Move 后同名文件重新建立并继续写入；PROD 不可直接推断安全 |
 | `Export-ScheduledTask` 找不到 Task | 任务位于子目录 `\FabricGatewayMonitoring\` | 读取 `TaskPath` 并传入 `-TaskPath` 后导出成功 |
-| `Set-ScheduledTask`: `The user name or password is incorrect` | 修改时触发任务 Principal 凭据验证 | 保持原 Task，改用 Task Scheduler GUI 编辑 Action 并保存，已成功 |
+| `Set-ScheduledTask`: `The user name or password is incorrect` | 修改时触发任务 Principal 凭据验证 | 保持原 Task，改用 Task Scheduler GUI 编辑 Action 并保存，已成功 |\n| Parsed Table 有记录但 Duration / Memory 指标全是 null | `bag_unpack` 的字段名与实际 CSV JSON Key 不匹配 | 2026-11-17 已确认 3 例；GitHub 已备份，POC 修复待实施 |
 
 ## 1. Notebook：`NoAvailableProvider` / `JSONDecodeError`
 
@@ -187,3 +187,12 @@ Uploader 会拆分 CSV 成多批请求；处理完静态文件后持续轮询并
 ### Task Scheduler 文件路径与修改方式
 
 原任务在 `Task Scheduler Library\FabricGatewayMonitoring\Gateway-UploadLogs`，`TaskPath` 为 `\FabricGatewayMonitoring\`。使用 `Export-ScheduledTask -TaskName "Gateway-UploadLogs" -TaskPath "\FabricGatewayMonitoring\"` 才能正确定位并生成备份；仅指定 TaskName 曾报 `The system cannot find the file specified`。后台 Task 修改时 `Set-ScheduledTask` 报 `The user name or password is incorrect`，最终通过 GUI 中的 **Properties → Actions → Edit** 将参数切换到 `Config.live-poc.json` 并成功启动，不需要删除重建任务。
+
+
+## 2026-11-17 — Parsed Table 指标全为 null（已确认根因，尚未修复）
+
+**症状：** `QueryExecutionAggregationReport.AverageQueryExecutionDuration_ms_`（2,935/2,935 null）；`QueryStreamingReport.StreamingDuration_ms_`（2,346/2,346 null）；`MashupEvaluationReport.[AverageCommit byte]`（1,892/1,892 null）。Raw 中对应的 `AverageQueryExecutionDuration(ms)`、`StreamingDuration(ms)`、`AverageCommit(byte)` 可读到值。
+
+**根因：** 当前实际部署的三个 Parser Function 与 GitHub 源码一致，但 `evaluate bag_unpack(log) : (...)` 使用了不符合当前 Gateway CSV Header 的字段名。KQL 生成空列，不必然报 ingestion failure；Update Policy 已配置不代表字段正确。另有多个类似错配和 Raw 额外列待盘点。
+
+**处置：** 暂不修改正在运行的 Uploader。先完成全字段矩阵、留存 Raw 样本、确认目标 schema/单位；在 GitHub 维护受控 KQL Patch，POC 使用只读 Query 验证转换，再更新三个 Parser；只验证修复后新摄入记录。历史 null 不会自动回填。完整证据与回滚注意事项：[Parser/schema audit](PARSER_SCHEMA_AUDIT.md)；[部署快照](baselines/2026-11-17/README.md)。
