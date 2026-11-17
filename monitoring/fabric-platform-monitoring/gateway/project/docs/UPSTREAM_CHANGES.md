@@ -3,7 +3,7 @@
 > **对照基线：** [Microsoft Fabric Toolbox（Gateway PowerShell）](https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring/gateway) 和 [Jumpstart Gateway Setup Notebook v0.2.3](https://github.com/ecotte/fabric-platform-monitoring/blob/v0.2.3/gateway-monitoring/src/fabric-platform-monitoring/setup/Gateway%20Monitoring%20Setup.Notebook/notebook-content.py)。  
 > **范围：** 仅当前 fork 的 `monitoring/fabric-platform-monitoring/gateway/`。原有项目 `README.md`、Fabric Report/Semantic Model/KQL、Capacity、Inventory 等均未改动。
 
-[返回总览](../POC_README.md) · [POC 状态](POC_STATUS.md) · [复现步骤](DEPLOYMENT_RUNBOOK.md)
+[返回总览](../README.md) · [POC 状态](POC_STATUS.md) · [复现步骤](DEPLOYMENT_RUNBOOK.md)
 
 ## 先看变更矩阵
 
@@ -104,12 +104,12 @@ Add-MsgEventHub -msg $msg -connectionType "Heartbeat" -config $config
 ## 2026-11-17 — 源码 Parser 缺陷（修复尚未合并）
 
 - GitHub 原始 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql` 中存在多处 `bag_unpack` 字段名与当前 Gateway CSV 实际 Header 不匹配。POC 对应 Parsed 指标全为 null，Raw 有非空数据。
-- 本次**未修改**上游 `src/Gateway/...`、Uploader、Eventhouse 函数或 Update Policy。仅在 `gateway/docs/` 存储 [源码/实际部署基线](baselines/2026-11-17/README.md)、[缺陷与验收计划](PARSER_SCHEMA_AUDIT.md)、[PROD Upload Manifest 设计 Backlog](PROD_UPLOAD_MANIFEST_DESIGN.md)。
+- 本次**未修改**上游 `src/Gateway/...`、Uploader、Eventhouse 函数或 Update Policy。仅在 `gateway/docs/` 存储 [源码/实际部署基线](../evidence/2026-11-17/README.md)、[缺陷与验收计划](PARSER_SCHEMA_AUDIT.md)、[PROD Upload Manifest 设计 Backlog](PROD_UPLOAD_MANIFEST_DESIGN.md)。
 - 后续在 POC 测试 KQL Patch 并回归后，才考虑修复 fork 的原始 Schema 路径或对官方仓库提交 issue/PR；先保留该分支的 Gateway 范围约束。
 
 
 ## 2026-11-17 后续：KQL 备份及候选修复（仍未部署）
 
-- 完整实际部署 Function Body（15/15 与仓库源码相同）、实际 Schema（142 行）及脱敏 MCP Eventhouse 概览已提交到 [baseline](baselines/2026-11-17/README.md)。
+- 完整实际部署 Function Body（15/15 与仓库源码相同）、实际 Schema（142 行）及脱敏 MCP Eventhouse 概览已提交到 [baseline](../evidence/2026-11-17/README.md)。
 - 新增 [字段映射审计](SCHEMA_FIELD_MAPPING_AUDIT.md)；[candidate / dryrun / rollback](../kql/poc-parser-fix-20261117/README.md) 三组 KQL 仅位于 GitHub。
 - **未修改** `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，未修改 VM Uploader，也未向 Eventhouse 执行 Function DDL。待 POC read-only 验证后再决定提交源码修复。

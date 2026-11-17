@@ -2,7 +2,7 @@
 
 **Status:** inspected all 15 live Function bodies and 142 database schema rows. **No live Eventhouse modification.** All 15 deployed Function bodies are textually equivalent after whitespace normalization to the GitHub source schema on branch `docs/gateway-monitoring-poc-20261112`. Both source and deployment therefore share the confirmed parser bugs.
 
-Source files: [deployed functions](baselines/2026-11-17/DeployedFunctions.full.export.csv), [deployed schema](baselines/2026-11-17/DeployedTableSchema.sanitized.csv), [Raw keys/presence](baselines/2026-11-17/RawFieldInventory.export.csv), [MCP overview](baselines/2026-11-17/EventhouseOverview.MCP.sanitized.json).
+Source files: [deployed functions](../evidence/2026-11-17/DeployedFunctions.full.export.csv), [deployed schema](../evidence/2026-11-17/DeployedTableSchema.sanitized.csv), [Raw keys/presence](../evidence/2026-11-17/RawFieldInventory.export.csv), [MCP overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.json).
 
 ## Coverage overview
 
@@ -42,3 +42,6 @@ Source files: [deployed functions](baselines/2026-11-17/DeployedFunctions.full.e
 7. None of the candidate patches have been executed or accepted by the POC Kusto engine yet.
 
 Next steps: [run the three read-only preview queries first](../kql/poc-parser-fix-20261117/README.md), verify schema/order and numeric values, then—after review—apply POC-only Function alterations and check **new** ingested records. Keep rollback scripts ready.
+
+
+**2026-11-17 validation update:** Read-only candidates returned 77 / 113 / 91 rows respectively and recovered the expected numeric fields. This validates field lookup but **not** schema ordering, target types, DataSource shape, ingestion behavior, or existing historical rows. See [dry-run evidence](../evidence/2026-11-17/DRYRUN_RESULTS.md) and [STATUS](../STATUS.md).

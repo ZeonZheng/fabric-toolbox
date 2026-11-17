@@ -3,13 +3,13 @@
 > **决策更新（2026-11-17）：** 已在 POC 单节点验证真实 Performance Logs Move 后自动重建并继续写入，原始 Uploader Task 已启动连续观察。**仍未经生产可靠性验收。**  
 > **下一步：** 验证多轮完整性、断网/部分上传后的恢复与资源开销；若原始 Uploader 不达标，再评估只读 Tail/Checkpoint 或企业日志平台。
 
-[返回总览](../POC_README.md) · [部署指南](DEPLOYMENT_RUNBOOK.md) · [现状与 Backlog](POC_STATUS.md)
+[返回总览](../README.md) · [部署指南](DEPLOYMENT_RUNBOOK.md) · [现状与 Backlog](POC_STATUS.md)
 
 ## 1. 已验证的架构与边界
 
 - [可编辑的 POC Draw.io 架构图](Gateway-Monitoring-POC.drawio)（**2026-11-12 状态快照**；图中 UploadLogs Disabled 信息已过时，2026-11-13 状态请以下文为准）
 - [Fabric Jumpstart 部署介绍](https://jumpstart.fabric.microsoft.com/catalog/fpm-gateway-monitoring/)
-- [原 Toolbox 数据流示意图](../../Images/05%20-%20Gateway%20Report%20Data%20Logic.png)
+- [原 Toolbox 数据流示意图](../../../Images/05%20-%20Gateway%20Report%20Data%20Logic.png)
 
 ```text
 On-premises Gateway VM

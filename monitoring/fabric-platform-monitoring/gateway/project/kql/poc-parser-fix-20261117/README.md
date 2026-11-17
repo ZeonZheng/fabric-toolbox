@@ -17,8 +17,8 @@
 | `candidates/` | **MUTATING** `.create-or-alter function` commands, one per file; **do not run yet** |
 | `rollback/` | Restore exact 3 exported deployed Function bodies through `.create-or-alter function` wrappers. Use only after verifying current live state |
 
-Full live Function baseline: [DeployedFunctions.full.export.csv](../../docs/baselines/2026-11-17/DeployedFunctions.full.export.csv).
-Target schema baseline: [DeployedTableSchema.sanitized.csv](../../docs/baselines/2026-11-17/DeployedTableSchema.sanitized.csv).
+Full live Function baseline: [DeployedFunctions.full.export.csv](../../evidence/2026-11-17/DeployedFunctions.full.export.csv).
+Target schema baseline: [DeployedTableSchema.sanitized.csv](../../evidence/2026-11-17/DeployedTableSchema.sanitized.csv).
 Mapping audit: [SCHEMA_FIELD_MAPPING_AUDIT.md](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md).
 
 ## Recommended execution procedure
@@ -38,3 +38,13 @@ Mapping audit: [SCHEMA_FIELD_MAPPING_AUDIT.md](../../docs/SCHEMA_FIELD_MAPPING_A
 - The original DataSource normalization expression is preserved as written in the deployed functions, but this replacement changes its input expression from unpacked `DataSource` to `record.DataSource`: compare sample values in dry-run.
 - Raw may contain more fields than the Parsed Table's existing columns. This patch addresses selected broken mappings only—not full-field retention or uploader delivery completeness.
 - Applying changes only through Eventhouse UI will create Git/live drift. Once tested, carry approved source changes in Git and document deployment/rollback commit SHA.
+
+
+## 2026-11-17 first dry-run outcomes (user-executed)
+
+- QueryExecutionAggregation: 77 rows; 3 query-duration outputs 77 nonnull each, 3 processing-duration outputs 56 nonnull each.
+- QueryStreaming: 113 rows; both duration outputs 104 nonnull each.
+- MashupEvaluation: 91 rows; five selected metrics 91 nonnull each.
+- **These are read-only function candidate results only; no Eventhouse DDL has been applied.** Next: check candidate `| getschema`, target column order/types, DataSource preservation and TotalProcessorTime units before applying anything.
+
+[Current project status](../../STATUS.md) · [dated evidence](../../evidence/2026-11-17/DRYRUN_RESULTS.md).

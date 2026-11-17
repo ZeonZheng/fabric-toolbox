@@ -1,6 +1,6 @@
 # Gateway Monitoring — Parser/schema consistency audit (2026-11-17)
 
-> **Status: confirmed POC data-quality defect; remediation NOT yet applied.** POC single node only. GitHub branch `docs/gateway-monitoring-poc-20261112` is the source of truth. Evidence backups: [baselines/2026-11-17/](baselines/2026-11-17/README.md).
+> **Status: confirmed POC data-quality defect; remediation NOT yet applied.** POC single node only. GitHub branch `docs/gateway-monitoring-poc-20261112` is the source of truth. Evidence backups: [baselines/2026-11-17/](../evidence/2026-11-17/README.md).
 
 ## Executive summary
 
@@ -83,6 +83,6 @@ Additional gaps **need verification, not yet signed off**:
 
 ## Full inventory follow-up (2026-11-17)
 
-- [Full deployed 15 Function Bodies](baselines/2026-11-17/DeployedFunctions.full.export.csv) and [142 schema rows](baselines/2026-11-17/DeployedTableSchema.sanitized.csv) are now backed up from user-provided Eventhouse exports. All 15 live bodies **match** the GitHub source after whitespace normalisation.
+- [Full deployed 15 Function Bodies](../evidence/2026-11-17/DeployedFunctions.full.export.csv) and [142 schema rows](../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) are now backed up from user-provided Eventhouse exports. All 15 live bodies **match** the GitHub source after whitespace normalisation.
 - For exact raw/target field names and supported vs unsupported metrics, see [SCHEMA_FIELD_MAPPING_AUDIT.md](SCHEMA_FIELD_MAPPING_AUDIT.md).
 - Three **unexecuted candidate** parser rewrites, matching read-only dryrun KQL and live-function rollback commands exist under [kql](../kql/poc-parser-fix-20261117/README.md). They are not yet Kusto validated; do not deploy without dry-run and type/order checks.

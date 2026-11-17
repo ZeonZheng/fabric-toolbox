@@ -2,7 +2,7 @@
 
 > **记录截至 2026-11-17。** 这是一次 Windows On-premises Data Gateway **单 Cluster、单 Node** POC 的实测结果；不能代表所有 Gateway 节点或 Fabric Platform Monitoring 模块。
 
-[返回总览](../POC_README.md) · [继续部署](DEPLOYMENT_RUNBOOK.md) · [已发现问题](TROUBLESHOOTING.md)
+[返回总览](../README.md) · [继续部署](DEPLOYMENT_RUNBOOK.md) · [已发现问题](TROUBLESHOOTING.md)
 
 ## 一页结论
 
@@ -140,7 +140,7 @@ PROD 的样例 VM 发现数十个 Performance Log 历史文件，部分接近 10
 ## 8. 2026-11-17 — Eventhouse Raw / Parsed 数据质量专项验证
 
 - **Raw 入库快照（2026-11-16 ~02:59 UTC）：** 9 种 `logType`、647 个 Envelope、3,693 条 CSV Records。其中 8 种为 Gateway Report，`GatewayNodeInfo` 来源独立脚本。该快照不能证明全量上传、无重复。
-- **Raw 字段清单：** 106 个类型/字段组合，详情见 [字段备份](baselines/2026-11-17/RawFieldInventory.export.csv)；同类样本字段存在，但某些值正常为空。
+- **Raw 字段清单：** 106 个类型/字段组合，详情见 [字段备份](../evidence/2026-11-17/RawFieldInventory.export.csv)；同类样本字段存在，但某些值正常为空。
 - **Parsed（2026-11-17 ~06:24 UTC）：** `QueryExecutionReport.QueryExecutionDuration_ms_` 4,595/4,595 非 null；`QueryExecutionAggregationReport.AverageQueryExecutionDuration_ms_` 0/2,935；`QueryStreamingReport.StreamingDuration_ms_` 0/2,346；`MashupEvaluationReport.[AverageCommit byte]` 0/1,892。
 - **Raw 的对应字段仍有值（~06:31 UTC）：** `AverageQueryExecutionDuration(ms)` 73/73、`StreamingDuration(ms)` 81/90、`AverageCommit(byte)` 77/77。不同层级留存/采集时间窗口不可混为一谈。
 - **KQL 配置：** 导出的 14 条表 Update Policy 中，10 个 Parsed Target Policy 开启，来自 `GatewayReports-Raw`；24 小时 `OriginatesFromUpdatePolicy` ingestion-failure 查询为空。这不代表无静默字段映射错误。
@@ -148,15 +148,22 @@ PROD 的样例 VM 发现数十个 Performance Log 历史文件，部分接近 10
 - **本地 Report 文件分布：** 42 个（40 `History` merge 文件，2 `Source`），覆盖 8 种 Report。`History` 不是逐文件上传审计证据。
 - **安全/变更：** 2026-11-17 未修改运行中的 Parser、Table 或 Update Policy；仅 GitHub 文档和证据备份。`main` 未修改。未经全面验收不升级为 PROD。
 
-详细问题、复现查询、后续修复路线：**[PARSER_SCHEMA_AUDIT.md](PARSER_SCHEMA_AUDIT.md)**；部署源码和实际导出：**[Baselines](baselines/2026-11-17/README.md)**；PROD 追踪设计需求：**[Upload Manifest](PROD_UPLOAD_MANIFEST_DESIGN.md)**。
+详细问题、复现查询、后续修复路线：**[PARSER_SCHEMA_AUDIT.md](PARSER_SCHEMA_AUDIT.md)**；部署源码和实际导出：**[Baselines](../evidence/2026-11-17/README.md)**；PROD 追踪设计需求：**[Upload Manifest](PROD_UPLOAD_MANIFEST_DESIGN.md)**。
 
 
 ## 9. 2026-11-17 — 完整部署 KQL Baseline + 修复候选（尚未部署）
 
 - 用户提供完整 `.show functions` CSV，**15/15 部署 Function Body** 与 fork `DatabaseSchema.kql` 源码（忽略空白）一致。并提供 `.show database schema` **142 行**；MCP Overview 记录 **12 Tables / 10 transactional Update Policies / 2 healthy MVs / 156,878 rows** 的瞬时库存。
-- 备份已写入 [2026-11-17 baselines](baselines/2026-11-17/README.md)，删除数据库/群集/Policy Owner ID 等环境标识，保留 15 个原始 Function Body 和 Schema 列/类型/顺序。不是整库物理备份或生产配置导出。
+- 备份已写入 [2026-11-17 baselines](../evidence/2026-11-17/README.md)，删除数据库/群集/Policy Owner ID 等环境标识，保留 15 个原始 Function Body 和 Schema 列/类型/顺序。不是整库物理备份或生产配置导出。
 - 完成 [8 个 Report 类型 + GatewayNodeInfo 原始字段与 Parsed 表列对照](SCHEMA_FIELD_MAPPING_AUDIT.md)；确认 QEA 6 个 Duration 列、QueryStreaming 2 个 Duration 列、Mashup 5 个待映射列。不同于这些缺陷，OpenConnection 和 QueryExecution 的 `(ms)` 字段目前由旧 parser 正确读取，再按目标顺序输出，不应整体盲改。
 - 创建 **3 套候选 Patch / 3 套只读 Dry-run / 3 套 Rollback**：[kql/poc-parser-fix-20261117](../kql/poc-parser-fix-20261117/README.md)。目前只是 GitHub 文件，**未在 Eventhouse 执行任何 DDL / 修复 / 回填**，也尚未通过实际 KQL Dry-run。
 - 本轮新关注点：Raw 观察到的 QueryExecution 2 个独有 Duration 字段、QueryStreaming 3 个独有字段、Mashup 的原始 DataSource/RequestId 不保存在标准 Parsed Tables；PROD 是否需要保留全部 Raw 字段要独立决策。
 
 **下一行动：** 在 POC Queryset 分别运行三个 dry-run，检查非空率、列名/列序/类型和 DataSource/单位样本。先核验 POC、再审查变更、最后部署。保留 GitHub 为 Source of Truth。
+
+
+## 10. 2026-11-17 只读 Parser Candidate 测试通过（不是最终验收）
+
+- 三个 KQL dry-run 在 POC Queryset 执行成功：QueryExecutionAggregation 77 rows（Query Duration 3列各 77 非空，Processing Duration 3列各56非空）；QueryStreaming 113 rows（2列各104非空）；MashupEvaluation 91 rows（5列各91非空）。
+- 未部署任何 `.create-or-alter function`，原有表、Update Policies 未更改。下一步核对候选列顺序/类型和样本值/单位，特别是 Mashup `TotalProcessorTime(ms)`。
+- 正式证据摘要：[DRYRUN_RESULTS](../evidence/2026-11-17/DRYRUN_RESULTS.md)。当前权威状态：[STATUS](../STATUS.md)。

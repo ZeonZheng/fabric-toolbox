@@ -4,7 +4,7 @@
 > **已验证：** Metadata / Heartbeat / 历史日志副本 / Report；2026-11-13 真实 POC 日志首次 Move → Eventstream → History，Gateway 重新创建文件继续写入。  
 > **进行中：** `Gateway-UploadLogs` 已切换 `Config.live-poc.json` 并 Running；多日连续性、失败恢复和 PROD 安全性未完成验收。
 
-[返回导航](../POC_README.md) · [故障速查](TROUBLESHOOTING.md) · [POC 验证数据](POC_STATUS.md)
+[返回导航](../README.md) · [故障速查](TROUBLESHOOTING.md) · [POC 验证数据](POC_STATUS.md)
 
 ## 快速施工进度
 
@@ -52,7 +52,7 @@ jumpstart.install("fpm-gateway-monitoring")
 
 ### Step 1. 运行适配后的 Setup Notebook
 
-使用 [poc-notebooks/Gateway Monitoring Setup.ipynb](../poc-notebooks/Gateway%20Monitoring%20Setup.ipynb)。
+使用 [poc-notebooks/Gateway Monitoring Setup.ipynb](../notebooks/Gateway%20Monitoring%20Setup.ipynb)。
 
 - 在参数区填入当前 **Tenant ID / App (Client) ID**，不要沿用 POC 环境值。
 - 使用 Fabric REST API 读取两个 Eventstream 的 CustomEndpoint 配置，生成 `builtin/config.json`。
