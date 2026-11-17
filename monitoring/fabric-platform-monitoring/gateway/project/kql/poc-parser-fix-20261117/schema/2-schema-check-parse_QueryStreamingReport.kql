@@ -1,0 +1,28 @@
+// READ-ONLY schema diff: EXPECT IsMatch=true for every column; no Eventhouse writes.
+// READ-ONLY PREVIEW: run in Queryset, no function/policy changes.
+let Candidate = () {
+['GatewayReports-Raw']
+| where logType == "QueryStreamingReport"
+| mv-expand record = log
+| project
+    GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+    RequestId = toguid(tostring(record.RequestId)),
+    DataSource = parse_json((replace_strings(dynamic_to_json(record.DataSource),dynamic(['["','"]','\\"']),dynamic(['[',']','"'])))),
+    QueryTrackingId = toguid(tostring(record.QueryTrackingId)),
+    StreamingStartTimeUTC = todatetime(record.StreamingStartTimeUTC),
+    SpoolingDiskReadingDuration_ms_ = tolong(record["SpoolingDiskReadingDuration(ms)"]),
+    StreamingDuration_ms_ = tolong(record["StreamingDuration(ms)"]),
+    Success = tostring(record.Success),
+    ErrorMessage = tostring(record.ErrorMessage)
+};
+let Expected = QueryStreamingReport
+    | getschema
+    | project ColumnOrdinal, ExpectedName=ColumnName, ExpectedType=ColumnType;
+let Actual = Candidate()
+    | getschema
+    | project ColumnOrdinal, ActualName=ColumnName, ActualType=ColumnType;
+Expected
+| join kind=fullouter Actual on ColumnOrdinal
+| extend IsMatch = (ExpectedName == ActualName and ExpectedType == ActualType)
+| project ColumnOrdinal, ExpectedName, ActualName, ExpectedType, ActualType, IsMatch
+| order by ColumnOrdinal asc

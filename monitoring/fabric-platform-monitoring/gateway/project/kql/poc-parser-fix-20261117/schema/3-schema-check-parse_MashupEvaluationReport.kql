@@ -1,0 +1,36 @@
+// READ-ONLY schema diff: EXPECT IsMatch=true for every column; no Eventhouse writes.
+// READ-ONLY PREVIEW: run in Queryset, no function/policy changes.
+let Candidate = () {
+['GatewayReports-Raw']
+| where logType == "MashupEvaluationReport"
+| mv-expand record = log
+| project
+    GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+    QueryTrackingId = toguid(tostring(record.QueryTrackingId)),
+    ConnectionId = toguid(tostring(record.ConnectionId)),
+    DataSourceKinds = tostring(record.DataSourceKinds), // No corresponding CSV key in the observed sample; intentionally not inferred
+    DataSourcePaths = tostring(record.DataSourcePaths), // Same limitation; do not equate to DataSource without inspecting payload
+    EndTimeUTC = todatetime(record.EndTimeUTC),
+    ['AverageCommit byte'] = toreal(record["AverageCommit(byte)"]),
+    AverageIODataBytesPerSecond = toreal(record.AverageIODataBytesPerSecond),
+    AveragePercentProcessorTime = toreal(record.AveragePercentProcessorTime),
+    ['AverageWorkingSet byte'] = toreal(record["AverageWorkingSet(byte)"]),
+    ['MaxCommit byte'] = tolong(record["MaxCommit(byte)"]),
+    MaxIODataBytesPerSecond = tolong(record.MaxIODataBytesPerSecond),
+    MaxPercentProcessorTime = toreal(record.MaxPercentProcessorTime),
+    ['MaxWorkingSet byte'] = tolong(record["MaxWorkingSet(byte)"]),
+    TotalBytes = tolong(record.TotalBytes),
+    TotalProcessorTime = toreal(record["TotalProcessorTime(ms)"]) * 1ms,
+    TotalRows = toreal(record.TotalRows)
+};
+let Expected = MashupEvaluationReport
+    | getschema
+    | project ColumnOrdinal, ExpectedName=ColumnName, ExpectedType=ColumnType;
+let Actual = Candidate()
+    | getschema
+    | project ColumnOrdinal, ActualName=ColumnName, ActualType=ColumnType;
+Expected
+| join kind=fullouter Actual on ColumnOrdinal
+| extend IsMatch = (ExpectedName == ActualName and ExpectedType == ActualType)
+| project ColumnOrdinal, ExpectedName, ActualName, ExpectedType, ActualType, IsMatch
+| order by ColumnOrdinal asc
