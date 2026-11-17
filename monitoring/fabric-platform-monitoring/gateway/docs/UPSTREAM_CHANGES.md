@@ -99,3 +99,10 @@ Add-MsgEventHub -msg $msg -connectionType "Heartbeat" -config $config
 **2026-11-13 新发现（仅部署时观察与记录，未改源码）：** 原 Uploader 的 History 合并发生在**上传之后**，按文件名前缀、当天创建、低于 100 MiB 选择本地归档文件；与 Gateway 自身的 100 MiB / 10 个源日志轮转独立。用户计划 POC 连续观察后，以独立 Staging 和事件时间 cutoff 测试 PROD 首次 Backfill，不直接上传所有生产历史日志。详见 [架构运维](ARCHITECTURE_OPERATIONS.md) 与 [状态记录](POC_STATUS.md)。
 
 **重新实施时先读：** [Runbook](DEPLOYMENT_RUNBOOK.md)，遇到错误再看 [Troubleshooting](TROUBLESHOOTING.md)；若要把 fork 变更回合并或向上游贡献，使用本页核对真实 diff。
+
+
+## 2026-11-17 — 源码 Parser 缺陷（修复尚未合并）
+
+- GitHub 原始 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql` 中存在多处 `bag_unpack` 字段名与当前 Gateway CSV 实际 Header 不匹配。POC 对应 Parsed 指标全为 null，Raw 有非空数据。
+- 本次**未修改**上游 `src/Gateway/...`、Uploader、Eventhouse 函数或 Update Policy。仅在 `gateway/docs/` 存储 [源码/实际部署基线](baselines/2026-11-17/README.md)、[缺陷与验收计划](PARSER_SCHEMA_AUDIT.md)、[PROD Upload Manifest 设计 Backlog](PROD_UPLOAD_MANIFEST_DESIGN.md)。
+- 后续在 POC 测试 KQL Patch 并回归后，才考虑修复 fork 的原始 Schema 路径或对官方仓库提交 issue/PR；先保留该分支的 Gateway 范围约束。
