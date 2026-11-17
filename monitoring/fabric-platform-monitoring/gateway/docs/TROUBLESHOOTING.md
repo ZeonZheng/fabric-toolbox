@@ -196,3 +196,6 @@ Uploader 会拆分 CSV 成多批请求；处理完静态文件后持续轮询并
 **根因：** 当前实际部署的三个 Parser Function 与 GitHub 源码一致，但 `evaluate bag_unpack(log) : (...)` 使用了不符合当前 Gateway CSV Header 的字段名。KQL 生成空列，不必然报 ingestion failure；Update Policy 已配置不代表字段正确。另有多个类似错配和 Raw 额外列待盘点。
 
 **处置：** 暂不修改正在运行的 Uploader。先完成全字段矩阵、留存 Raw 样本、确认目标 schema/单位；在 GitHub 维护受控 KQL Patch，POC 使用只读 Query 验证转换，再更新三个 Parser；只验证修复后新摄入记录。历史 null 不会自动回填。完整证据与回滚注意事项：[Parser/schema audit](PARSER_SCHEMA_AUDIT.md)；[部署快照](baselines/2026-11-17/README.md)。
+
+
+**2026-11-17 补充：** 已备份全部 15 个部署 Function（均与仓库源码一致）、142 行 Schema；三个只读 dry-run / candidate patch / rollback 已加入 [POC KQL 修复候选](../kql/poc-parser-fix-20261117/README.md)。Patch **尚未执行**。字段映射详见 [SCHEMA_FIELD_MAPPING_AUDIT.md](SCHEMA_FIELD_MAPPING_AUDIT.md)。
