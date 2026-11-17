@@ -1,0 +1,414 @@
+"Name","Parameters","Body","Folder"
+"GatewayNodeStatusWithInfo","()","{
+    GatewayNodeInfo
+    | join kind=fullouter GatewayNodeStatus on nodeId
+    | extend Responding=tobool(iff(datetime_diff('minute',now(),lastStatusDate)>1 or isempty(lastStatusDate),false,true))
+    | project nodeId,logDate,clusterId,clusterName,machine,cloudDatasourceRefresh,contactInformation,customConnectors,status,type,version,versionStatus,osName,osVersion,cores,logicalCores,memoryGb,lastStatusDate,Responding
+}","Functions"
+"QueryConnections","(DateSearch:datetime, DaysBack:int, AllGateways:bool, Gateways:dynamic, AllClusters:bool, Clusters:dynamic)","{
+     let TimeFrom = datetime_add('day', -DaysBack, DateSearch);
+     let TimeToStart = datetime_add('hour', 24, DateSearch);
+     let TimeToExecute = datetime_add('hour', 30, DateSearch);
+     let GatewaysToSeach = GatewayNodeInfo | where AllGateways or machine in(Gateways) | where AllClusters or clusterName in(Clusters) | project nodeId;
+     let QueryExecution = QueryExecutionReport
+        | where QueryExecutionEndTimeUTC >= TimeFrom and QueryExecutionEndTimeUTC <= TimeToExecute
+        | where GatewayObjectId in(GatewaysToSeach);
+     let QueryStart = QueryStartReport
+        | where QueryExecutionStartTimeUTC >= TimeFrom and QueryExecutionStartTimeUTC <= TimeToStart
+        | where GatewayObjectId in(GatewaysToSeach);
+     QueryStart
+    | mv-expand todynamic(DataSource)
+    | extend DataSource=DataSource.kind, Path=DataSource.path
+    | project QueryTrackingId, DataSource=tostring(DataSource), Path=tostring(Path)
+ }","Functions"
+"QueryExecutionUnified","(DateSearch:datetime, DaysBack:int, AllGateways:bool, Gateways:dynamic, AllClusters:bool, Clusters:dynamic)","{
+     let TimeFrom = datetime_add('day', -DaysBack, DateSearch);
+     let TimeToStart = datetime_add('hour', 24, DateSearch);
+     let TimeToExecute = datetime_add('hour', 36, DateSearch);
+     let GatewaysToSeach = GatewayNodeInfo | where AllGateways or machine in(Gateways) | where AllClusters or clusterName in(Clusters) | project nodeId;
+     let QueryExecution = QueryExecutionReport
+        | where QueryExecutionEndTimeUTC >= TimeFrom and QueryExecutionEndTimeUTC <= TimeToExecute
+        | where GatewayObjectId in(GatewaysToSeach);
+     let QueryStart = QueryStartReport
+        | where QueryExecutionStartTimeUTC >= TimeFrom and QueryExecutionStartTimeUTC <= TimeToStart
+        | where GatewayObjectId in(GatewaysToSeach);
+     QueryStart
+    | join kind=leftouter QueryExecution
+        on
+        $left.GatewayObjectId == $right.GatewayObjectId,
+        $left.RequestId == $right.RequestId,
+        $left.QueryTrackingId == $right.QueryTrackingId
+    | lookup GatewayNodeInfo on $left.GatewayObjectId == $right.nodeId
+    | project
+        RootActivityId,
+        GatewayObjectId, 
+        ClusterName=clusterName,
+        NodeName=machine,
+        WorkspaceId, 
+        ItemId, 
+        QueryExecutionStartTimeUTC, 
+        QueryExecutionEndTimeUTC,  
+        QueryExecutionDuration_ms_,
+        DataProcessingEndTimeUTC,
+        DataProcessingDuration_ms_,
+        RequestId, 
+        QueryTrackingId,
+        CurrentActivityId,
+        Success,
+        QueryText,
+        Table,
+        OperationType,
+        QueryType,    
+        DataSource,
+        ServiceName,
+        SKU,
+        DataReadingAndSerializationDuration_ms_,
+        SpoolingDiskWritingDuration_ms_,
+        SpoolingDiskReadingDuration_ms_,
+        SpoolingTotalDataSize_byte_,
+        ErrorMessage,
+        HostContextType,
+        ConnectionIds
+    | order by
+        RootActivityId,
+        GatewayObjectId,
+        WorkspaceId,
+        ItemId,
+        QueryExecutionStartTimeUTC desc,
+        RequestId,
+        QueryTrackingId
+ }","Functions"
+"SystemCounters","(DateSearch:datetime, DaysBack:int, AllGateways:bool, Gateways:dynamic, AllClusters:bool, Clusters:dynamic)","{
+     let TimeFrom = datetime_add('day', -DaysBack, DateSearch);
+     let TimeTo = datetime_add('hour', 24, DateSearch);
+     let GatewaysToSeach = GatewayNodeInfo
+        | where AllGateways or machine in(Gateways)
+        | where AllClusters or clusterName in(Clusters)
+        | project nodeId;
+     let SystemCounter = SystemCounterAggregationReport
+        | where AggregationEndTimeUTC >= TimeFrom and AggregationEndTimeUTC <= TimeTo
+        | where GatewayObjectId in(GatewaysToSeach);
+     SystemCounter
+    | lookup GatewayNodeInfo on $left.GatewayObjectId == $right.nodeId
+    | project 
+        ClusterId=clusterId,
+        ClusterName=clusterName,
+        NodeId=GatewayObjectId, 
+        NodeName=machine,
+        AggregationEndTimeUTC,
+        CounterName,
+        Max,
+        Min,
+        Average
+ }","Functions"
+"parse_ConcurrentOperationAggregationReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""ConcurrentOperationAggregationReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      AggregationStartTimeUTC:datetime ,
+      AggregationEndTimeUTC:datetime,
+      CounterName:string,
+      Max:real,
+      Min:real,
+      Average:real
+    )
+}","UpdatePolicyFunctions"
+"parse_CopyExecutionReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""CopyExecutionReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+        GatewayObjectId:guid,
+        ActivityId:guid, 
+        CopyExecutionStartTimeUTC:datetime, 
+        CompletionStatus:string, 
+        ['CopyExecutionDuration(ms)']:decimal,    
+        ['CopyWorkerCPUUtilization(%)']:decimal, 
+        ['CopyWorkerMemoryUsage(byte)']:decimal
+    )
+    | project-rename ['CopyExecutionDuration_ms']=['CopyExecutionDuration(ms)'], 
+    ['CopyWorkerCPUUtilizationPercentage']=['CopyWorkerCPUUtilization(%)'],
+    ['CopyWorkerMemoryUsage_byte']=['CopyWorkerMemoryUsage(byte)']
+}","UpdatePolicyFunctions"
+"parse_GatewayNodeInfoRaw","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""GatewayNodeInfo""
+    | project log,logDate
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      clusterId:guid,
+      clusterName:string,
+      nodeId:guid,
+      machine:string, 
+      cloudDatasourceRefresh:bool, 
+      contactInformation:string, 
+      customConnectors:bool,
+      status:string,
+      type:string,
+      version:string,
+      versionStatus:string,
+      osName:string,
+      osVersion:string,
+      cores:long,
+      logicalCores:long,
+      memoryGb:real,
+      logDate:datetime 
+    )
+}","UpdatePolicyFunctions"
+"parse_MashupEvaluationReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""MashupEvaluationReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      QueryTrackingId:guid,
+      ConnectionId:guid,
+      DataSourceKinds:string,
+      DataSourcePaths:string,
+      EndTimeUTC:datetime,
+      ['AverageCommit byte']:real ,
+      AverageIODataBytesPerSecond:real,
+      AveragePercentProcessorTime:real,
+      ['AverageWorkingSet byte']:real,
+      ['MaxCommit byte']:long,
+      MaxIODataBytesPerSecond:long,
+      MaxPercentProcessorTime:real,
+      ['MaxWorkingSet byte']:long,
+      TotalBytes:long,
+      TotalProcessorTime:timespan,
+      TotalRows:real
+    )
+}","UpdatePolicyFunctions"
+"parse_OpenConnectionReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""OpenConnectionReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      DataSource:dynamic,
+      OpenConnectionStartTimeUTC:datetime,
+      OpenConnectionTrackingId:guid,
+      ProviderName:string,
+      RequestId:guid,
+      [""OpenConnectionDuration(ms)""]:long,
+      Success:string,
+      ErrorMessage:string
+      )
+  | project GatewayObjectId,
+    RequestId,
+    DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','\\""']),dynamic(['[',']','""'])))),
+    OpenConnectionStartTimeUTC,
+    OpenConnectionTrackingId,
+    ProviderName,
+    [""OpenConnectionDuration(ms)""],
+    Success,
+    ErrorMessage
+}","UpdatePolicyFunctions"
+"parse_QueryExecutionAggregationReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""QueryExecutionAggregationReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      AggregationStartTimeUTC:datetime,
+      AggregationEndTimeUTC:datetime,
+      DataSource:dynamic,
+      Success:string,
+      AverageQueryExecutionDuration_ms_:real,
+      MaxQueryExecutionDuration_ms_:long,
+      MinQueryExecutionDuration_ms_:long,
+      QueryType:string,
+      AverageDataProcessingDuration_ms_:real,
+      MaxDataProcessingDuration_ms_:long,
+      MinDataProcessingDuration_ms_:long,
+      Count:long
+      )
+  | project GatewayObjectId,
+      AggregationStartTimeUTC,
+      AggregationEndTimeUTC,
+      DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','\\""']),dynamic(['[',']','""'])))),
+      Success,
+      AverageQueryExecutionDuration_ms_,
+      MaxQueryExecutionDuration_ms_,
+      MinQueryExecutionDuration_ms_,
+      QueryType,
+      AverageDataProcessingDuration_ms_,
+      MaxDataProcessingDuration_ms_,
+      MinDataProcessingDuration_ms_,
+      Count
+}","UpdatePolicyFunctions"
+"parse_QueryExecutionReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""QueryExecutionReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      RequestId:guid,
+      DataSource:dynamic,
+      QueryTrackingId:guid,
+      QueryExecutionEndTimeUTC:datetime,
+      ['QueryExecutionDuration(ms)']:long,
+      QueryType:string,
+      ['DataReadingAndSerializationDuration(ms)']:long,
+      ['SpoolingDiskWritingDuration(ms)']:long,
+      ['SpoolingDiskReadingDuration(ms)']:long,
+      ['SpoolingTotalDataSize(byte)']:long,
+      DataProcessingEndTimeUTC:datetime,
+      ['DataProcessingDuration(ms)']:long,
+      Success:string,
+      ErrorMessage:string
+      )
+  | project GatewayObjectId,
+    RequestId,
+    DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','\\""']),dynamic(['[',']','""'])))),
+    QueryTrackingId,
+    QueryExecutionEndTimeUTC,
+    ['QueryExecutionDuration(ms)'],
+    QueryType,
+    ['DataReadingAndSerializationDuration(ms)'],
+    ['SpoolingDiskWritingDuration(ms)'],
+    ['SpoolingDiskReadingDuration(ms)'],
+    ['SpoolingTotalDataSize(byte)'],
+    DataProcessingEndTimeUTC,
+    ['DataProcessingDuration(ms)'],
+    Success,
+    ErrorMessage
+}","UpdatePolicyFunctions"
+"parse_QueryStartReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""QueryStartReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      RequestId:guid,
+      DataSource:dynamic,
+      QueryTrackingId:guid,
+      QueryExecutionStartTimeUTC:datetime,
+      QueryType:string,
+      QueryText:string,
+      EvaluationContext:string
+    )
+    | invoke parse_QueryStartReport_csv()
+}","UpdatePolicyFunctions"
+"parse_QueryStartReport_csv","(T:(GatewayObjectId:guid,RequestId:guid,DataSource:dynamic,QueryTrackingId:guid,QueryExecutionStartTimeUTC:datetime,QueryType:string,QueryText:string,EvaluationContext:string))","{
+      T
+      | project GatewayObjectId,
+            RequestId,
+            DataSource=parse_json(DataSource),
+            QueryTrackingId,
+            QueryExecutionStartTimeUTC,
+            OperationType=QueryType,
+            QueryText = base64_decode_tostring(QueryText),
+            Table = iff(isempty(extract(""__AS_Query__ = (.+),"",1,base64_decode_tostring(QueryText))),extract(""<ccon>(.+)</ccon>"",1,base64_decode_tostring(QueryText)),extract(""__AS_Query__ = (.+),"",1,base64_decode_tostring(QueryText))),
+            EvaluationContext=parse_json(iff(isempty(parse_json(EvaluationContext)),'{""serviceTraceContexts"":[{""serviceName"":""Dataflow Gen1""}]}',EvaluationContext)),
+            ServiceTraceContexts=parse_json(iff(isempty(parse_json(EvaluationContext)),'{""serviceTraceContexts"":[{""serviceName"":""Dataflow Gen1""}]}',EvaluationContext)).serviceTraceContexts
+      | mv-expand ServiceTraceContexts
+      | extend ServiceName=ServiceTraceContexts.serviceName
+      | mv-expand ServiceTraceContexts.traceIds
+      | evaluate bag_unpack(ServiceTraceContexts_traceIds) : (
+            GatewayObjectId:guid,
+            RequestId:guid,
+            DataSource:dynamic,
+            QueryTrackingId:guid,
+            QueryExecutionStartTimeUTC:datetime,
+            OperationType:string,
+            QueryText:string,
+            Table:string,
+            EvaluationContext:dynamic,
+            ServiceTraceContexts:dynamic,
+            ServiceName:string,
+            key:string,
+            value:string
+      )
+      | evaluate pivot(key,take_any(value)) : (
+            GatewayObjectId:guid,
+            RequestId:guid,
+            DataSource:dynamic,
+            QueryTrackingId:guid,
+            QueryExecutionStartTimeUTC:datetime,
+            OperationType:string,
+            QueryText:string,
+            Table:string,
+            EvaluationContext:dynamic,
+            ServiceName:string,
+            CurrentActivityId:guid,
+            [""Session Id""]:guid,
+            [""Host Context Type""]:string,
+            [""Connection Ids""]:string,
+            [""Dataflow Id""]:guid,
+            [""Workspace Id""]:guid,
+            DatasetId:guid,
+            QueryType:string,
+            RootActivityId:guid,
+            SKU:string,
+            WorkspaceId:guid
+      )
+      | project GatewayObjectId
+            ,RequestId
+            ,DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','}"",""{','\\""']),dynamic(['[',']','},{','""']))))
+            ,QueryTrackingId
+            ,QueryExecutionStartTimeUTC
+            ,OperationType
+            ,QueryText
+            ,Table
+            ,EvaluationContext
+            ,ServiceName
+            ,CurrentActivityId
+            ,ItemId = iff(isempty(DatasetId),[""Dataflow Id""],DatasetId)
+            ,QueryType
+            ,RootActivityId = iff(isempty(RootActivityId),[""Session Id""],RootActivityId)
+            ,SKU
+            ,WorkspaceId = iff(isempty(WorkspaceId),['Workspace Id'],WorkspaceId)
+            ,HostContextType=[""Host Context Type""]
+            ,ConnectionIds=[""Connection Ids""]
+}","Parsers"
+"parse_QueryStreamingReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""QueryStreamingReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      RequestId:guid,
+      DataSource:dynamic,
+      QueryTrackingId:guid,
+      StreamingStartTimeUTC:datetime,
+      SpoolingDiskReadingDuration_ms_:long,
+      StreamingDuration_ms_:long,
+      Success:string,
+      ErrorMessage:string
+    )
+  | project GatewayObjectId,
+      RequestId,
+      DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','\\""']),dynamic(['[',']','""'])))),
+      QueryTrackingId,
+      StreamingStartTimeUTC,
+      SpoolingDiskReadingDuration_ms_,
+      StreamingDuration_ms_,
+      Success,
+      ErrorMessage
+}","UpdatePolicyFunctions"
+"parse_SystemCounterAggregationReport","()","{
+  ['GatewayReports-Raw']
+    | where logType == ""SystemCounterAggregationReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid ,
+      AggregationStartTimeUTC:datetime ,
+      AggregationEndTimeUTC:datetime,
+      CounterName:string,
+      Max:real,
+      Min:real,
+      Average:real
+    )
+}","UpdatePolicyFunctions"
