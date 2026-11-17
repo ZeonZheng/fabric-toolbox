@@ -14,6 +14,14 @@
 
 **尚未证明：** Candidate 与目标表列名/顺序/类型相同、所有原始数值与单位相等、`DataSource` 转换正确、`TotalProcessorTime(ms)` 的 timespan 正确、事务性 Update Policy 接受新函数、历史 Parsed null 能回填、文件传输无丢失/重复。
 
-**后续应保存的证据：** 3 个 Schema Check 的全列 `IsMatch` 结果；几组原始 Raw 值和 Candidate 样本值；必要时的 POC 部署前后新记录数与异常日志。
+## Schema Check 已通过（2026-11-17 16:37～16:38 UTC+8）
+
+| CSV | 目标 | 通过 |
+| --- | --- | ---: |
+| [export (8)](SchemaCheck-QueryExecutionAggregationReport.csv) | Aggregation | 13/13 |
+| [export (9)](SchemaCheck-QueryStreamingReport.csv) | Streaming | 9/9 |
+| [export (10)](SchemaCheck-MashupEvaluationReport.csv) | Mashup | 17/17 |
+
+**39/39 列全部一致**，列序从 0 连续到末列。下一步保存 [数值/单位检查](../../kql/poc-parser-fix-20261117/value-checks/README.md) 的结果。此验证不证明已修改运行中 Parser。
 
 [相关测试脚本](../../kql/poc-parser-fix-20261117/README.md) · [GW-001](../../tracking/ISSUES.md) · [STATUS](../../STATUS.md)。

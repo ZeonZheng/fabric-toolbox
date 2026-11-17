@@ -4,7 +4,7 @@
 
 | ID | 优先级 | 状态 | 首次记录 | 最后复核 | 问题 / 风险 | 下一动作 | 证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **GW-001** | P1 | **验证中** | 2026-11-17 | 2026-11-17 | KQL Parser 的 Raw Key 错配导致 Parsed 指标全 null | Schema、类型、值校验后 POC 修复 | [字段审计](../docs/SCHEMA_FIELD_MAPPING_AUDIT.md) · [Dry-run](../evidence/2026-11-17/DRYRUN_RESULTS.md) |
+| **GW-001** | P1 | **验证中** | 2026-11-17 | 2026-11-17 | KQL Parser 的 Raw Key 错配导致 Parsed 指标全 null | Schema 39/39 已通过；继续检查数值/单位/DataSource 后再考虑 POC 修复 | [字段审计](../docs/SCHEMA_FIELD_MAPPING_AUDIT.md) · [Dry-run](../evidence/2026-11-17/DRYRUN_RESULTS.md) |
 | **GW-002** | P1 | 待验证 | 2026-11-12 | 2026-11-17 | 活动日志 Move、部分 Batch 失败/重试、重复/遗漏风险 | 文件/行数/批次对账与故障测试 | [文件生命周期](../docs/ARCHITECTURE_OPERATIONS.md) |
 | **GW-003** | P1 | 待决策 | 2026-11-17 | 2026-11-17 | Raw 仅保留 1 天，回放及长期审计受限 | 评估 Retention / Archive 成本与恢复策略 | [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
 | **GW-004** | P2 | 设计中 | 2026-11-17 | 2026-11-17 | PROD 需 Upload Manifest 追踪 File、Hash、Rows、Batch Status | 确定快照、幂等与持久化设计 | [设计草案](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |

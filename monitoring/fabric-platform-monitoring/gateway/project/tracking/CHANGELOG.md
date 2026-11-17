@@ -2,6 +2,10 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-17 16:37～16:38（UTC+8）— Parser Schema 检查通过
+- Aggregation 13/13、Streaming 9/9、Mashup 17/17，**39 个 IsMatch 均为 true**；已归档 CSV (8)/(9)/(10)。
+- 新增只读 value-checks 查询，尚未执行；没有修改实际 Eventhouse Function。
+
 ## 2026-11-17 — 项目结构精简与中文统一
 - 按单人项目精简组织：根目录仅保留总览 / 状态 / AI 交接，`tracking/` 集中 Roadmap、Issues、Decisions、Changelog；不设 Owner / Assignee。
 - 核对已归档的 Eventhouse Overview **JSON + Markdown 脱敏快照**，统一项目文档为中文；保持上游代码及实际导出原文。
