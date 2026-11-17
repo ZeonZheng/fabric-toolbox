@@ -10,4 +10,4 @@
 
 **Safety & workflow:** Do not commit Config secrets, Eventstream SAS, Gateway QueryText, full raw logs, production identifiers or access data. Before changing Eventhouse, compare live Functions to GitHub, validate Kusto Schema and raw values, consider transactional Update Policy ingestion impact, and have rollback ready. **Never run candidate DDL or Jumpstart overwrite automatically.** After each investigation update only canonical [STATUS](STATUS.md), issue transition in [ISSUES](ISSUES.md), and dated [CHANGELOG](CHANGELOG.md); link immutable evidence. If unsure about a source or test, label it unverified.
 
-**Next:** run `Candidate() | getschema` and sample value comparisons for 3 types. See [Dry-run evidence](evidence/2026-11-17/DRYRUN_RESULTS.md).
+**Next:** run [three prebuilt schema checks](kql/poc-parser-fix-20261117/schema/README.md), require every `IsMatch=true`, and compare sampled numeric/unit values before POC-only changes. See [Dry-run evidence](evidence/2026-11-17/DRYRUN_RESULTS.md).

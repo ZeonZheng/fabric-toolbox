@@ -6,7 +6,7 @@ Each entry is dated in **Asia/Singapore**. This is a historical log, not the lat
 - Completed read-only KQL dry-runs: Aggregation 77 rows (3 fields 77 non-null, 3 fields 56); Streaming 113 rows (2 fields 104); Mashup 91 rows (5 fields 91). **Not deployed**.
 - Captured 15 live Function bodies, 142 deployed-schema rows, enabled Update Policies and sanitized MCP Eventhouse overview. Source and deployed function bodies agreed 15/15.
 - Reorganized **our** docs/evidence/KQL/notebooks under `gateway/project/`. Kept upstream code and vendor assets in place. Introduced central project overview, current status, issue register, ADR log, roadmap and AI handoff.
-- Next: verify target column order/types and sampled values, then gate POC-only deployment.
+- Added read-only `kql/poc-parser-fix-20261117/schema/` comparison queries for all three candidates. No schema outputs supplied yet.\n- Next: verify target column order/types and sampled values, then gate POC-only deployment.
 
 ## 2026-11-16 — Raw diagnostics
 - Raw snapshot: 9 logTypes, 647 JSON messages, 3,693 CSV records; 106 observed logType/field combinations. Snapshot is not full ingestion audit.

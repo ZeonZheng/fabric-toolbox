@@ -13,7 +13,7 @@
 
 | Folder | Purpose |
 | --- | --- |
-| `dryrun/` | **READ-ONLY** KQL using `let Candidate = () {...}` and `summarize`; safe first execution |
+| `schema/` | **READ-ONLY** KQL `getschema` comparison of Candidate vs target type/order/name; run after successful dry-run |\n| `dryrun/` | **READ-ONLY** KQL using `let Candidate = () {...}` and `summarize`; safe first execution |
 | `candidates/` | **MUTATING** `.create-or-alter function` commands, one per file; **do not run yet** |
 | `rollback/` | Restore exact 3 exported deployed Function bodies through `.create-or-alter function` wrappers. Use only after verifying current live state |
 
@@ -25,7 +25,7 @@ Mapping audit: [SCHEMA_FIELD_MAPPING_AUDIT.md](../../docs/SCHEMA_FIELD_MAPPING_A
 
 1. **Make a non-sensitive local snapshot** of the three live Function bodies (`.show functions`) and note the time. Ensure the Queryset is connected to the **POC** KQL database, not PROD.
 2. Run the three `dryrun/` files in KQL Queryset **one by one**. The query result should show `Rows > 0` and relevant `Present_...` counts > 0 for metrics whose Raw values are present. `StreamingDuration` can legitimately be empty for some raw rows.
-3. **Check schema**: In each dry-run replace final `| summarize...` with `| getschema`, and compare the resulting ColumnName / ColumnType / ColumnOrdinal with exported target table schema. Any mismatch = **STOP**.
+3. **Check schema:** Execute the [prebuilt `schema/` queries](schema/README.md). They compare Candidate and target `ColumnName`, `ColumnType`, and `ColumnOrdinal`; if any `IsMatch=false`, **STOP**.
 4. Validate actual values and units: compare the source `record["<CSV key>"]` with the candidate output for a small set of rows using `RequestId`/`QueryTrackingId` or reliable event timestamp; validate DataSource structure, numeric precision and `TotalProcessorTime` milliseconds-to-timespan.
 5. Only after these pass, apply **one** `candidates/` command at a time in POC. Watch ingestion/errors immediately: `.show ingestion failures`, Eventstream destination metrics, Raw count and parsed count. Roll back with matching `rollback/` command if problems appear.
 6. Validate **newly ingested** events after the change; existing parsed null values are not recomputed automatically. Plan any history backfill separately with duplication controls.

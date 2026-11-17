@@ -15,7 +15,7 @@
 
 ## One next action
 
-**Run read-only schema/type checks of the 3 Candidate KQLs.** For each file in [kql/dryrun](kql/poc-parser-fix-20261117/dryrun/), replace only the final `| summarize` with `| getschema`; compare columns, order and data types against [deployed table schema](evidence/2026-11-17/DeployedTableSchema.sanitized.csv). Also verify a few exact source/target numeric values, DataSource shape, and Mashup milliseconds → timespan. Save evidence before any DDL. Do not execute the candidate files yet.
+**Run the [three prebuilt read-only schema comparison queries](kql/poc-parser-fix-20261117/schema/README.md).** Each contrasts candidate column names/types/order with the existing target table using `getschema`. All `IsMatch` results must be true. Compare with the [deployed schema export](evidence/2026-11-17/DeployedTableSchema.sanitized.csv). Also verify a few exact source/target numeric values, DataSource shape, and Mashup milliseconds → timespan. Save evidence before any DDL. Do not execute the candidate files yet.
 
 **Last completed checkpoint:** user-run read-only dry-runs on 2026-11-17 ~15:40 Asia/Singapore:
 - QueryExecutionAggregation: 77 rows; 3 Query Duration fields 77 non-null each; 3 Data Processing Duration fields 56 each.
