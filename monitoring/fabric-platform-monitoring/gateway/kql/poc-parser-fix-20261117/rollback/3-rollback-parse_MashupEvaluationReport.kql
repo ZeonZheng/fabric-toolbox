@@ -1,0 +1,25 @@
+.create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from MashupEvaluationReport") parse_MashupEvaluationReport() {
+  ['GatewayReports-Raw']
+    | where logType == "MashupEvaluationReport"
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      QueryTrackingId:guid,
+      ConnectionId:guid,
+      DataSourceKinds:string,
+      DataSourcePaths:string,
+      EndTimeUTC:datetime,
+      ['AverageCommit byte']:real ,
+      AverageIODataBytesPerSecond:real,
+      AveragePercentProcessorTime:real,
+      ['AverageWorkingSet byte']:real,
+      ['MaxCommit byte']:long,
+      MaxIODataBytesPerSecond:long,
+      MaxPercentProcessorTime:real,
+      ['MaxWorkingSet byte']:long,
+      TotalBytes:long,
+      TotalProcessorTime:timespan,
+      TotalRows:real
+    )
+}
