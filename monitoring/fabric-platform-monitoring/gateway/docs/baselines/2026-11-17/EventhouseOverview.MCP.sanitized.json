@@ -1,0 +1,541 @@
+{
+  "database": {
+    "name": "Gateway Monitoring",
+    "capturedAt": "2026-11-17T14:56:00+08:00",
+    "databasePolicy": {
+      "SoftDeletePeriod": "365000.00:00:00",
+      "Recoverability": "Enabled"
+    }
+  },
+  "summary": {
+    "tables": 12,
+    "materializedViews": 2,
+    "functions": 15,
+    "updatePolicies": 10,
+    "totalRows": 156878
+  },
+  "tables": [
+    {
+      "name": "GatewayReports-Raw",
+      "folder": "Raw",
+      "columns": [
+        "logType",
+        "log",
+        "logDate"
+      ],
+      "rows": 812,
+      "retention": "1.00:00:00",
+      "hotCache": "1.00:00:00",
+      "hasUpdatePolicy": false,
+      "minTime": "2026-11-15T18:55:15.7600578Z",
+      "maxTime": "2026-11-17T06:45:23.5732949Z",
+      "note": "唯一摄入入口；仅保留 1 天，解析失败无回补窗口"
+    },
+    {
+      "name": "GatewayNodeInfoRaw",
+      "folder": "Raw",
+      "rows": 8,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "clusterId",
+        "clusterName",
+        "nodeId",
+        "machine",
+        "cloudDatasourceRefresh",
+        "contactInformation",
+        "customConnectors",
+        "status",
+        "type",
+        "version",
+        "versionStatus",
+        "osName",
+        "osVersion",
+        "cores",
+        "logicalCores",
+        "memoryGb",
+        "logDate"
+      ],
+      "minTime": "2026-11-11T08:20:01.4975156Z",
+      "maxTime": "2026-11-15T05:42:17.4145243Z",
+      "note": "Raw 源 logType 已被 1 天保留期清除，表因自身 3650 天保留期仍有 8 行"
+    },
+    {
+      "name": "QueryStartReport",
+      "folder": "Reports",
+      "rows": 4611,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "RequestId",
+        "DataSource",
+        "QueryTrackingId",
+        "QueryExecutionStartTimeUTC",
+        "OperationType",
+        "QueryText",
+        "Table",
+        "EvaluationContext",
+        "ServiceName",
+        "CurrentActivityId",
+        "ItemId",
+        "QueryType",
+        "RootActivityId",
+        "SKU",
+        "WorkspaceId",
+        "HostContextType",
+        "ConnectionIds"
+      ]
+    },
+    {
+      "name": "QueryExecutionReport",
+      "folder": "Reports",
+      "rows": 4611,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "RequestId",
+        "DataSource",
+        "QueryTrackingId",
+        "QueryExecutionEndTimeUTC",
+        "QueryExecutionDuration_ms_",
+        "QueryType",
+        "DataReadingAndSerializationDuration_ms_",
+        "SpoolingDiskWritingDuration_ms_",
+        "SpoolingDiskReadingDuration_ms_",
+        "SpoolingTotalDataSize_byte_",
+        "DataProcessingEndTimeUTC",
+        "DataProcessingDuration_ms_",
+        "Success",
+        "ErrorMessage"
+      ]
+    },
+    {
+      "name": "QueryExecutionAggregationReport",
+      "folder": "Reports",
+      "rows": 2939,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "AggregationStartTimeUTC",
+        "AggregationEndTimeUTC",
+        "DataSource",
+        "Success",
+        "AverageQueryExecutionDuration_ms_",
+        "MaxQueryExecutionDuration_ms_",
+        "MinQueryExecutionDuration_ms_",
+        "QueryType",
+        "AverageDataProcessingDuration_ms_",
+        "MaxDataProcessingDuration_ms_",
+        "MinDataProcessingDuration_ms_",
+        "Count"
+      ]
+    },
+    {
+      "name": "QueryStreamingReport",
+      "folder": "Reports",
+      "rows": 2362,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "RequestId",
+        "DataSource",
+        "QueryTrackingId",
+        "StreamingStartTimeUTC",
+        "SpoolingDiskReadingDuration_ms_",
+        "StreamingDuration_ms_",
+        "Success",
+        "ErrorMessage"
+      ]
+    },
+    {
+      "name": "OpenConnectionReport",
+      "folder": "Reports",
+      "rows": 1906,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "RequestId",
+        "DataSource",
+        "OpenConnectionStartTimeUTC",
+        "OpenConnectionTrackingId",
+        "ProviderName",
+        "OpenConnectionDuration_ms_",
+        "Success",
+        "ErrorMessage"
+      ]
+    },
+    {
+      "name": "MashupEvaluationReport",
+      "folder": "Reports",
+      "rows": 1900,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "QueryTrackingId",
+        "ConnectionId",
+        "DataSourceKinds",
+        "DataSourcePaths",
+        "EndTimeUTC",
+        "AverageCommit byte",
+        "AverageIODataBytesPerSecond",
+        "AveragePercentProcessorTime",
+        "AverageWorkingSet byte",
+        "MaxCommit byte",
+        "MaxIODataBytesPerSecond",
+        "MaxPercentProcessorTime",
+        "MaxWorkingSet byte",
+        "TotalBytes",
+        "TotalProcessorTime",
+        "TotalRows"
+      ],
+      "note": "含空格列名，查询需使用 ['AverageCommit byte'] 形式"
+    },
+    {
+      "name": "ConcurrentOperationAggregationReport",
+      "folder": "Reports",
+      "rows": 4189,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "AggregationStartTimeUTC",
+        "AggregationEndTimeUTC",
+        "CounterName",
+        "Max",
+        "Min",
+        "Average"
+      ]
+    },
+    {
+      "name": "CopyExecutionReport",
+      "folder": "Reports",
+      "rows": 0,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "ActivityId",
+        "CopyExecutionStartTimeUTC",
+        "CompletionStatus",
+        "CopyExecutionDuration_ms",
+        "CopyWorkerCPUUtilizationPercentage",
+        "CopyWorkerMemoryUsage_byte"
+      ],
+      "note": "0 行；Raw 表中从未出现 logType == CopyExecutionReport"
+    },
+    {
+      "name": "SystemCounterAggregationReport",
+      "folder": "System",
+      "rows": 121475,
+      "retention": "3650.00:00:00",
+      "hotCache": "90.00:00:00",
+      "hasUpdatePolicy": true,
+      "columns": [
+        "GatewayObjectId",
+        "AggregationStartTimeUTC",
+        "AggregationEndTimeUTC",
+        "CounterName",
+        "Max",
+        "Min",
+        "Average"
+      ]
+    },
+    {
+      "name": "GatewaysHeartbeat",
+      "folder": "System",
+      "rows": 12065,
+      "retention": "7.00:00:00",
+      "hotCache": "1.00:00:00",
+      "hasUpdatePolicy": false,
+      "columns": [
+        "GatewayId",
+        "FileVersion",
+        "ServerTimestampUTC",
+        "Responding",
+        "ProcessName",
+        "ProductVersion",
+        "StartTime"
+      ],
+      "note": "直接摄入，不经过 Raw → update policy 通路；网关状态 MV 的源表"
+    }
+  ],
+  "updatePolicies": [
+    {
+      "target": "ConcurrentOperationAggregationReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_ConcurrentOperationAggregationReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "CopyExecutionReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_CopyExecutionReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "GatewayNodeInfoRaw",
+      "source": "GatewayReports-Raw",
+      "query": "parse_GatewayNodeInfoRaw()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "MashupEvaluationReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_MashupEvaluationReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "OpenConnectionReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_OpenConnectionReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "QueryExecutionAggregationReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_QueryExecutionAggregationReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "QueryExecutionReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_QueryExecutionReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "QueryStartReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_QueryStartReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "QueryStreamingReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_QueryStreamingReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    },
+    {
+      "target": "SystemCounterAggregationReport",
+      "source": "GatewayReports-Raw",
+      "query": "parse_SystemCounterAggregationReport()",
+      "isEnabled": true,
+      "isTransactional": true,
+      "propagateIngestionProperties": false,
+      "managedIdentity": null
+    }
+  ],
+  "functions": [
+    {
+      "name": "parse_QueryStartReport_csv",
+      "folder": "Parsers",
+      "docString": "",
+      "parameters": "(T:(GatewayObjectId:guid,RequestId:guid,DataSource:dynamic,QueryTrackingId:guid,QueryExecutionStartTimeUTC:datetime,QueryType:string,QueryText:string,EvaluationContext:string))",
+      "kind": "parser"
+    },
+    {
+      "name": "parse_QueryStartReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from QueryStartReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_QueryExecutionReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from QueryExecutionReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_OpenConnectionReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from OpenConnectionReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_QueryExecutionAggregationReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from QueryExecutionAggregationReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_QueryStreamingReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from QueryStreamingReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_MashupEvaluationReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from MashupEvaluationReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_SystemCounterAggregationReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from SystemCounterAggregationReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "parse_ConcurrentOperationAggregationReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from MashupEvaluationReport",
+      "parameters": "()",
+      "kind": "update-policy",
+      "note": "DocString 写的是 MashupEvaluationReport，与实际来源不符"
+    },
+    {
+      "name": "parse_GatewayNodeInfoRaw",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from GatewayNodeInfo",
+      "parameters": "()",
+      "kind": "update-policy",
+      "note": "DocString 写的是 GatewayNodeInfo（MV 名），实际来源为 GatewayNodeInfoRaw"
+    },
+    {
+      "name": "parse_CopyExecutionReport",
+      "folder": "UpdatePolicyFunctions",
+      "docString": "Function to extract data from CopyExecutionReport",
+      "parameters": "()",
+      "kind": "update-policy"
+    },
+    {
+      "name": "GatewayNodeStatusWithInfo",
+      "folder": "Functions",
+      "docString": "Function to merge the GatewayNodeInfo and Heartbeat",
+      "parameters": "()",
+      "kind": "query"
+    },
+    {
+      "name": "QueryConnections",
+      "folder": "Functions",
+      "docString": "Function to get Query Connections",
+      "parameters": "(DateSearch:datetime, DaysBack:int, AllGateways:bool, Gateways:dynamic, AllClusters:bool, Clusters:dynamic)",
+      "kind": "query"
+    },
+    {
+      "name": "QueryExecutionUnified",
+      "folder": "Functions",
+      "docString": "Function to merge the Query Start and Execution",
+      "parameters": "(DateSearch:datetime, DaysBack:int, AllGateways:bool, Gateways:dynamic, AllClusters:bool, Clusters:dynamic)",
+      "kind": "query"
+    },
+    {
+      "name": "SystemCounters",
+      "folder": "Functions",
+      "docString": "Function to get SystemCounters",
+      "parameters": "(DateSearch:datetime, DaysBack:int, AllGateways:bool, Gateways:dynamic, AllClusters:bool, Clusters:dynamic)",
+      "kind": "query"
+    }
+  ],
+  "materializedViews": [
+    {
+      "name": "GatewayNodeInfo",
+      "sourceTable": "GatewayNodeInfoRaw",
+      "folder": "Information",
+      "query": "GatewayNodeInfoRaw | summarize arg_max(logDate, clusterId, clusterName, machine, cloudDatasourceRefresh, contactInformation, customConnectors, status, type, version, versionStatus, osName, osVersion, cores, logicalCores, memoryGb) by nodeId",
+      "isHealthy": true,
+      "isEnabled": true,
+      "status": "Active",
+      "lastRunResult": "Completed",
+      "materializedTo": "2026-11-17T06:44:05.5914379Z",
+      "lastRun": "2026-11-17T06:45:26.2234557Z",
+      "effectiveDateTime": "2026-05-25T08:52:05.631037Z",
+      "autoUpdateSchema": false
+    },
+    {
+      "name": "GatewayNodeStatus",
+      "sourceTable": "GatewaysHeartbeat",
+      "folder": "Information",
+      "query": "GatewaysHeartbeat | project-rename nodeId = GatewayId, lastStatusDate = ServerTimestampUTC | summarize arg_max(lastStatusDate,FileVersion,Responding) by nodeId",
+      "isHealthy": true,
+      "isEnabled": true,
+      "status": "Active",
+      "lastRunResult": "Completed",
+      "materializedTo": "2026-11-17T06:45:24.578156Z",
+      "lastRun": "2026-11-17T06:45:56.5394671Z",
+      "effectiveDateTime": "2026-05-25T08:52:05.631037Z",
+      "autoUpdateSchema": false
+    }
+  ],
+  "parserTemplate": "['GatewayReports-Raw']\n| where logType == \"<LogType>\"\n| project log\n| mv-expand log\n| evaluate bag_unpack(log) : ( <TypedSchema> )\n| project <Columns>",
+  "findings": [
+    {
+      "severity": "info",
+      "title": "CopyExecutionReport 全链路无数据",
+      "detail": "表 0 行，且 Raw 表 logType 分布中不存在 CopyExecutionReport；update policy 已启用但源数据从未产生。"
+    },
+    {
+      "severity": "warning",
+      "title": "Raw 表保留期仅 1 天",
+      "detail": "GatewayReports-Raw 保留 1 天、热缓存 1 小时，而下游 3650 天。任何 parse 失败的重放/回补窗口不超过 24 小时。"
+    },
+    {
+      "severity": "warning",
+      "title": "GatewayNodeInfoRaw 源日志已过期",
+      "detail": "Raw 中已无 logType == GatewayNodeInfo；现有 8 行为 3650 天保留期下的历史残留，MV 仍靠这些行做 arg_max。"
+    },
+    {
+      "severity": "info",
+      "title": "两处 DocString 与实际不符",
+      "detail": "parse_ConcurrentOperationAggregationReport 的 DocString 指向 MashupEvaluationReport；parse_GatewayNodeInfoRaw 的 DocString 指向 GatewayNodeInfo（MV 而非 Raw 表）。"
+    },
+    {
+      "severity": "info",
+      "title": "GatewaysHeartbeat 为旁路摄入",
+      "detail": "该表无 update policy，直接写入；仅有 7 天保留 / 1 天热缓存，是 GatewayNodeStatus MV 的唯一来源。"
+    },
+    {
+      "severity": "info",
+      "title": "未定义 ingestionbatching 策略",
+      "detail": "所有表使用默认批处理策略。"
+    }
+  ]
+}
