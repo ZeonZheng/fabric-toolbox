@@ -1,0 +1,86 @@
+"Name","Body"
+"parse_QueryExecutionAggregationReport","{
+  ['GatewayReports-Raw']
+    | where logType == ""QueryExecutionAggregationReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      AggregationStartTimeUTC:datetime,
+      AggregationEndTimeUTC:datetime,
+      DataSource:dynamic,
+      Success:string,
+      AverageQueryExecutionDuration_ms_:real,
+      MaxQueryExecutionDuration_ms_:long,
+      MinQueryExecutionDuration_ms_:long,
+      QueryType:string,
+      AverageDataProcessingDuration_ms_:real,
+      MaxDataProcessingDuration_ms_:long,
+      MinDataProcessingDuration_ms_:long,
+      Count:long
+      )
+  | project GatewayObjectId,
+      AggregationStartTimeUTC,
+      AggregationEndTimeUTC,
+      DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','\\""']),dynamic(['[',']','""'])))),
+      Success,
+      AverageQueryExecutionDuration_ms_,
+      MaxQueryExecutionDuration_ms_,
+      MinQueryExecutionDuration_ms_,
+      QueryType,
+      AverageDataProcessingDuration_ms_,
+      MaxDataProcessingDuration_ms_,
+      MinDataProcessingDuration_ms_,
+      Count
+}"
+"parse_QueryStreamingReport","{
+  ['GatewayReports-Raw']
+    | where logType == ""QueryStreamingReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      RequestId:guid,
+      DataSource:dynamic,
+      QueryTrackingId:guid,
+      StreamingStartTimeUTC:datetime,
+      SpoolingDiskReadingDuration_ms_:long,
+      StreamingDuration_ms_:long,
+      Success:string,
+      ErrorMessage:string
+    )
+  | project GatewayObjectId,
+      RequestId,
+      DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['[""','""]','\\""']),dynamic(['[',']','""'])))),
+      QueryTrackingId,
+      StreamingStartTimeUTC,
+      SpoolingDiskReadingDuration_ms_,
+      StreamingDuration_ms_,
+      Success,
+      ErrorMessage
+}"
+"parse_MashupEvaluationReport","{
+  ['GatewayReports-Raw']
+    | where logType == ""MashupEvaluationReport""
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      QueryTrackingId:guid,
+      ConnectionId:guid,
+      DataSourceKinds:string,
+      DataSourcePaths:string,
+      EndTimeUTC:datetime,
+      ['AverageCommit byte']:real ,
+      AverageIODataBytesPerSecond:real,
+      AveragePercentProcessorTime:real,
+      ['AverageWorkingSet byte']:real,
+      ['MaxCommit byte']:long,
+      MaxIODataBytesPerSecond:long,
+      MaxPercentProcessorTime:real,
+      ['MaxWorkingSet byte']:long,
+      TotalBytes:long,
+      TotalProcessorTime:timespan,
+      TotalRows:real
+    )
+}"
