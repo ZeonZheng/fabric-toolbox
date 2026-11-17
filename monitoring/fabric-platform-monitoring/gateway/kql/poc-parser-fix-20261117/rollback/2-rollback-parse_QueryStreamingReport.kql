@@ -1,0 +1,26 @@
+.create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from QueryStreamingReport") parse_QueryStreamingReport() {
+  ['GatewayReports-Raw']
+    | where logType == "QueryStreamingReport"
+    | project log
+    | mv-expand log
+    | evaluate bag_unpack(log) : (
+      GatewayObjectId:guid,
+      RequestId:guid,
+      DataSource:dynamic,
+      QueryTrackingId:guid,
+      StreamingStartTimeUTC:datetime,
+      SpoolingDiskReadingDuration_ms_:long,
+      StreamingDuration_ms_:long,
+      Success:string,
+      ErrorMessage:string
+    )
+  | project GatewayObjectId,
+      RequestId,
+      DataSource=parse_json((replace_strings(dynamic_to_json(DataSource),dynamic(['["','"]','\\"']),dynamic(['[',']','"'])))),
+      QueryTrackingId,
+      StreamingStartTimeUTC,
+      SpoolingDiskReadingDuration_ms_,
+      StreamingDuration_ms_,
+      Success,
+      ErrorMessage
+}
