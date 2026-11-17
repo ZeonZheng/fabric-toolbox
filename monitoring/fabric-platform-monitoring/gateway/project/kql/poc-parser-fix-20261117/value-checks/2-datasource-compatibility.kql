@@ -1,0 +1,48 @@
+// 只读；不会修改 Eventhouse。用于比较旧版 bag_unpack 的 DataSource 与新 Candidate 的结果。
+// 不输出真实 DataSource 值、路径或连接字符串。请仅在 POC Queryset 运行。
+// 注意：本文件尚未经过用户 POC KQL 引擎执行验证。
+let LegacyVsCandidate =
+    ['GatewayReports-Raw']
+    | where logType in ("QueryExecutionAggregationReport", "QueryStreamingReport")
+    | mv-expand record = log
+    | project logType, record
+    | extend CandidateNormalized = parse_json(replace_strings(dynamic_to_json(record.DataSource), dynamic(['["','"]','\\"']), dynamic(['[',']','"'])))
+    | evaluate bag_unpack(record) : (*, DataSource:dynamic)
+    | extend LegacyNormalized = parse_json(replace_strings(dynamic_to_json(DataSource), dynamic(['["','"]','\\"']), dynamic(['[',']','"'])))
+    | extend LegacyText = tostring(LegacyNormalized),
+             CandidateText = tostring(CandidateNormalized)
+    | summarize
+        Rows=count(),
+        OriginalNonEmpty=countif(isnotempty(tostring(DataSource))),
+        LegacyNonEmpty=countif(isnotempty(LegacyText)),
+        CandidateNonEmpty=countif(isnotempty(CandidateText)),
+        DifferentSerialized=countif(LegacyText != CandidateText),
+        LegacyTypes=make_set(gettype(LegacyNormalized), 5),
+        CandidateTypes=make_set(gettype(CandidateNormalized), 5)
+      by logType
+    | extend
+        Check="Legacy Parser vs Candidate (DataSource)",
+        RawKindsKey=long(null),
+        RawPathsKey=long(null);
+let MashupRawShape =
+    ['GatewayReports-Raw']
+    | where logType == "MashupEvaluationReport"
+    | mv-expand record = log
+    | summarize
+        Rows=count(),
+        OriginalNonEmpty=countif(isnotempty(tostring(record.DataSource))),
+        RawKindsKey=countif(bag_has_key(record, "DataSourceKinds")),
+        RawPathsKey=countif(bag_has_key(record, "DataSourcePaths")),
+        CandidateTypes=make_set(gettype(record.DataSource), 5)
+    | extend
+        Check="Mashup raw DataSource shape only",
+        logType="MashupEvaluationReport",
+        LegacyNonEmpty=long(null),
+        CandidateNonEmpty=long(null),
+        DifferentSerialized=long(null),
+        LegacyTypes=dynamic([]);
+union LegacyVsCandidate, MashupRawShape
+| project logType, Check, Rows, OriginalNonEmpty,
+          LegacyNonEmpty, CandidateNonEmpty, DifferentSerialized,
+          LegacyTypes, CandidateTypes, RawKindsKey, RawPathsKey
+| order by logType asc
