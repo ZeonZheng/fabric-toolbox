@@ -28,7 +28,7 @@
 
 ### 当前唯一下一步
 
-用本机已连接的 **Eventhouse Remote MCP**，让本地 AI 执行 [只读 Preflight 套件](kql/poc-parser-fix-20261117/mcp-handoff/README.md)：重新读取 3 个当前 Function Body、Update Policies、Raw/Parsed 最新情况与最近 2 小时失败记录；与本分支部署基线核对并返回**脱敏中文报告**。完成现场确认和人工审查后，再决定是否**逐个**应用 POC Parser Patch；**MCP 不得执行 DDL**。
+用本机已连接的 **Eventhouse Remote MCP**，让本地 AI 按 [完整 Prompt（含仓库地址与报告模板）](kql/poc-parser-fix-20261117/mcp-handoff/LOCAL_AI_PROMPT.md) 执行 [只读 Preflight 套件](kql/poc-parser-fix-20261117/mcp-handoff/README.md)：重新读取 3 个当前 Function Body、Update Policies、Raw/Parsed 最新情况与最近 2 小时失败记录；与本分支部署基线核对并返回**脱敏中文报告**。完成现场确认和人工审查后，再决定是否**逐个**应用 POC Parser Patch；**MCP 不得执行 DDL**。
 
 **DataSource 对照已通过（2026-11-17 17:11 UTC+8）：** Aggregation 96/96、Streaming 139/139，Legacy 与 Candidate 全部内容一致（`DifferentSerialized=0`），类型均观察到 `array/string`。Mashup 103 条 Raw 中 `DataSourceKinds`、`DataSourcePaths` 两个 Key 出现 **0 次**，不属于本轮字段映射修复可凭空填充的字段。完整 [CSV](evidence/2026-11-17/DataSourceCheck-LegacyVsCandidate.csv)。该项不代表所有日志字段已完整保存。
 
