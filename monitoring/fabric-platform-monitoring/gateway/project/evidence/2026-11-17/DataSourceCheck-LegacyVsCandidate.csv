@@ -1,0 +1,4 @@
+"logType","Check","Rows","OriginalNonEmpty","LegacyNonEmpty","CandidateNonEmpty","DifferentSerialized","LegacyTypes","CandidateTypes","RawKindsKey","RawPathsKey"
+"MashupEvaluationReport","Mashup raw DataSource shape only","103","103","","","","[]","[""string""]","0","0"
+"QueryExecutionAggregationReport","Legacy Parser vs Candidate (DataSource)","96","96","96","96","0","[""array"",""string""]","[""array"",""string""]","",""
+"QueryStreamingReport","Legacy Parser vs Candidate (DataSource)","139","139","139","139","0","[""array"",""string""]","[""array"",""string""]","",""
