@@ -2,6 +2,14 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-20 14:22–14:48（UTC+8）— Streaming Parser 部署后新数据回归 Passed
+- 本地 `eventhouse-remote` MCP 只读 Follow-up：现场 Function Body **逐字节匹配 Candidate**（规范化 SHA256 `587bba1a…703ac`）；Policy Enabled/Transactional，未观察到新摄入失败。
+- **Patch 后 Streaming Raw 5 个 Envelope / 32 行，Parsed 新增 32 行**；两项 Duration 均 **32/32 非空**，通过 KeyCheck 与 Raw **32/32 逐值一致，0 mismatch**。历史 2675 Parsed 行依然 null。
+- 8/8 类 Report Raw 在 Patch 后均有新 Envelope，证明当时链路有活动，**不是** Uploader 文件级无丢失/无重复验收。
+- 归档 [完整脱敏 Follow-up](../evidence/2026-11-20/gateway-streaming-followup-20261120-1445-SGT.sanitized.md) 与 [独立评审](../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)；功能性 Streaming 修复通过，但长时间运行与历史回填仍待独立处理。
+- 将**仅已验证 Streaming Function** 同步到 fork 的 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`；保留原版 2026-11-17 基线，不重装 Jumpstart，不动其它 Parser / PROD。
+- 下一轮针对 Aggregation 进行单函数受控 POC 修复；Mashup 先额外检查 TotalBytes 等潜在缺陷。
+
 ## 2026-11-20 14:19–14:22（UTC+8）— Streaming Candidate 已手工应用，Postcheck 暂不能判定
 
 - 用户在确认的 POC Fabric UI 手工执行 `parse_QueryStreamingReport` Candidate，回归 UTC 起点 **2026-11-20T06:19:18.0313089Z**。

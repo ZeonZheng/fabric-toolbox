@@ -7,7 +7,7 @@
 
 ## 30 秒了解项目
 
-已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC **手工应用 Streaming Candidate**；14:22 Postcheck 因无 Patch 后新 Streaming 数据判定 **Inconclusive**，尚未确认修复成功。详见 [Preflight 评审](evidence/2026-11-20/PRE_DEPLOYMENT_REVIEW.md)。
+已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC **手工应用 Streaming Candidate**；14:22 首轮因无新样本为 Inconclusive；**14:48 Follow-up 已通过：32/32 新 Parsed 行两项 Duration 恢复且 Raw/Parsed 值完全一致**。Streaming 的 GitHub 正式 Schema 已同步，但 Aggregation / Mashup 尚未部署；长期采集可靠性仍未验收。详见 [Streaming 验证报告](evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)。
 
 ## 快速导航（以此处为准）
 

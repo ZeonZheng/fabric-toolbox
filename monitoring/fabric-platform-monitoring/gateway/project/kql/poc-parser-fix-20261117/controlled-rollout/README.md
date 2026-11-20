@@ -1,6 +1,6 @@
 # POC Streaming Parser｜你和本地 AI 各做什么（简明操作版）
 
-> **更新 2026-11-20 14:22（UTC+8）。** 用户已在 POC 手工应用 Streaming Candidate。**不要重复执行 Step 1**。下面的 A 部分保留作为已执行操作记录，当前验证从 [FOLLOWUP_AI_PROMPT.md](FOLLOWUP_AI_PROMPT.md) 继续；14:22 Postcheck 无新 Streaming 样本，因此 Inconclusive。
+> **最新验收 2026-11-20 14:48（UTC+8）：Streaming 功能回归 Passed。** 用户已在 POC 手工执行修改；32/32 新 Parsed 记录两项 Duration 与 Raw 完全一致、0 mismatch、0 observed failures。**不要重复执行 Step 1**，此页保留作为实施记录。下一个对象见 [Aggregation Runbook](AGGREGATION_RUNBOOK.md)。
 > 
 > **职责分工：你只手动执行一次写命令；本地 AI / Eventhouse Remote MCP 只负责只读检查与报告；ChatGPT 评审是否成功。**
 
@@ -51,7 +51,7 @@ print RecordedAfterPatchUTC = now()
 
 ## B. 本地 AI + Eventhouse Remote MCP 执行（只读）
 
-**2026-11-20 14:22 更新：** 已完成首轮 Postcheck，因 Raw/Parsed 均无 Patch 后 Streaming 新记录，判定 Inconclusive。**现在优先执行 [补充只读检查](FOLLOWUP_AI_PROMPT.md)，不应再次部署。**
+**最新 2026-11-20 14:48 更新：** 首轮 14:22 Postcheck 因零样本为 Inconclusive，之后 [Follow-up](../../../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md) 获得 Raw 32 行、Parsed 32 行、双指标 32/32 完全匹配，因此本轮功能性修复 **Passed**；本页保留历史流程。
 
 使用 [**POSTCHECK_AI_PROMPT.md**](POSTCHECK_AI_PROMPT.md)，替换其中 `<RecordedAfterPatchUTC>` 为上述实际 UTC 时间，再将 Prompt 交给本地 AI。它会执行本目录已有的三份只读查询：
 

@@ -4,7 +4,7 @@
 
 | ID | 优先级 | 状态 | 首次记录 | 最后复核 | 问题 / 风险 | 下一动作 | 证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **GW-001** | P1 | **Streaming 已部署，回归 Inconclusive** | 2026-11-17 | 2026-11-20 | Streaming Parser 用户 14:19 UTC+8 左右在 POC 手工修改；14:22 Postcheck 无新 Raw/Parsed Streaming 样本；Aggregator 6 Duration 及 Mashup 指标仍待后续修复 | 用本地 MCP 检查新事件、Parser Body 与 Candidate 一致性及新字段非空，**通过前不修改其余两个 Function** | [Postcheck 评审](../evidence/2026-11-20/STREAMING_POSTCHECK_REVIEW.md) · [Follow-up Prompt](../kql/poc-parser-fix-20261117/controlled-rollout/FOLLOWUP_AI_PROMPT.md) |
+| **GW-001** | P1 | **部分通过：Streaming 已修复；其他 Parser 待处理** | 2026-11-17 | 2026-11-20 | POC Streaming 部署后 32/32 新行双 Duration 非空且 Raw/Parsed 32/32 匹配、0 mismatch，现场 Body 与 Candidate 相同；Aggregation 6 Duration 和 Mashup TotalBytes 等问题仍在；Streaming 历史 2675 行仍 null | 下一轮仅对 Aggregation 进行受控 POC 修复与新记录回归；Streaming 24h 观察另记，Mashup 额外数值检查后再修改 | [Follow-up 评审](../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md) · [Aggregation Runbook](../kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_RUNBOOK.md) |
 | **GW-002** | P1 | 待验证 | 2026-11-12 | 2026-11-17 | 活动日志 Move、部分 Batch 失败/重试、重复/遗漏风险 | 文件/行数/批次对账与故障测试 | [文件生命周期](../docs/ARCHITECTURE_OPERATIONS.md) |
 | **GW-003** | P1 | 待决策 | 2026-11-17 | 2026-11-17 | Raw 仅保留 1 天，回放及长期审计受限 | 评估 Retention / Archive 成本与恢复策略 | [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
 | **GW-004** | P2 | 设计中 | 2026-11-17 | 2026-11-17 | PROD 需 Upload Manifest 追踪 File、Hash、Rows、Batch Status | 确定快照、幂等与持久化设计 | [设计草案](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |

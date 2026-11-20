@@ -1,6 +1,6 @@
 # AI / 技术交接说明
 
-> 更新时间：2026-11-20 14:22（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
+> 更新时间：2026-11-20 14:48（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
 
 ## 固定背景
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点：** 用户已于 2026-11-20 在 POC 手工执行 `parse_QueryStreamingReport` Candidate，UTC 观察起点 `2026-11-20T06:19:18.0313089Z`。14:22 Postcheck **Inconclusive**：Patch 后 Raw/Parsed Streaming 0 行、Policy errors 0 observed；尚不能证明数值恢复，也不能因此说部署失败。请先运行 [本地 MCP Follow-up 只读 Prompt](kql/poc-parser-fix-20261117/controlled-rollout/FOLLOWUP_AI_PROMPT.md)；严禁继续修改其余 Functions 或自动回滚。详细报告：[2026-11-20 Evidence](evidence/2026-11-20/README.md)。
+**当前交接点：** `parse_QueryStreamingReport` 已于 2026-11-20 14:19 后在 POC 更新，14:22–14:48 Follow-up **Passed**：现场 Body 和 Candidate 逐字节相同、新 Parsed 32/32 两项 Duration 非空、Raw/Parsed 32/32 值一致、0 Policy failures。已将此已验证 Function 写入 fork 正式 KQL Schema 文件，**不是另一次 Eventhouse 部署**。总体 GW-001 未关闭，Aggregation/Mashup 尚未改动。下一步由用户手动按 [Aggregation Runbook](kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_RUNBOOK.md) 单独修复，MCP 做只读回归；Streaming 24h 观察独立进行。证据：[2026-11-20](evidence/2026-11-20/README.md)。

@@ -16,7 +16,7 @@
 | [dryrun/](dryrun/) | **否（只读）** | `let Candidate = () {...}`，用非空计数初步验证 |
 | [schema/](schema/README.md) | **否（只读）** | **已通过 3/3，39/39 列匹配** |
 | [value-checks/](value-checks/README.md) | **否（只读）** | 数值/单位检查已通过；[DataSource 内容等价性查询](value-checks/DATASOURCE_README.md) 已通过（235/235） |
-| [candidates/](candidates/) | **是（变更 Function）** | 每个文件含 `.create-or-alter function`；**现在禁止运行** |
+| [candidates/](candidates/) | **是（变更 Function）** | Streaming **已部署通过，勿重复运行**；Aggregation / Mashup 待受控部署 |
 | [rollback/](rollback/) | **是（回滚 Function）** | 以实际部署导出的旧 Body 恢复，必须确认现场版本后使用 |
 
 备份：[15 个实际 Function Body](../../evidence/2026-11-17/DeployedFunctions.full.export.csv) · [142 行 Schema](../../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) · [字段审计](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md)。
@@ -46,3 +46,11 @@ Microsoft 参考：[Update Policy](https://learn.microsoft.com/en-us/kusto/manag
 - [Mashup 新发现补充只读检查](value-checks/3-mashup-additional-metrics.kql)：`TotalBytes` 等此前未全部覆盖指标，**尚未执行**。
 
 **实际运行的 POC Functions 仍是旧版；历史 null 未修复。** 不要并行执行三个 Candidate，PROD 不受本轮变更影响。
+
+
+## 2026-11-20 Streaming POC 首轮修复验收
+
+- 实际现场 `parse_QueryStreamingReport` 与 Candidate Body 逐字节一致；修改后 **32/32 Parsed 两个 Duration 都非空**，Raw 匹配与数值对比 **32/32 一致、0 mismatch**，未观察到 Update Policy 失败。
+- 旧 Parsed 2675 行仍 null，历史不自动修复；功能验证窗口约 25 分钟，不等于长时间稳定性。
+- 已将这一个已通过 POC 验证的 Function 同步到 fork 正式 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，避免下次部署从旧源码覆盖修复。保留原版 `evidence/2026-11-17/DatabaseSchema.source.kql`。
+- [完整证据](../../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md) · [下一个 Aggregation Runbook](controlled-rollout/AGGREGATION_RUNBOOK.md)。

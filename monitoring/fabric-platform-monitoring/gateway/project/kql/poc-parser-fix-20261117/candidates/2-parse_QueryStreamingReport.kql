@@ -1,5 +1,4 @@
-// POC CANDIDATE ONLY. Not validated in a live KQL engine. Do NOT apply before dry-run tests.
-// May cause transactional source ingestion failure if schema/type incompatible.
+// POC VALIDATED: manually applied 2026-11-20, Follow-up 32/32 new records have both Duration values matching Raw.\n// DO NOT RE-RUN in the validated POC. Review separately before any PROD deployment; transactional Update Policy risk remains.
 .create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from QueryStreamingReport") parse_QueryStreamingReport() {
 ['GatewayReports-Raw']
 | where logType == "QueryStreamingReport"
