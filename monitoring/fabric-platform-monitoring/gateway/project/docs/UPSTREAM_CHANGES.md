@@ -1,7 +1,7 @@
 # Gateway Monitoring｜与官方实现的差异记录
 
 > **对照基线：** [Microsoft Fabric Toolbox（Gateway PowerShell）](https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring/gateway) 和 [Jumpstart Gateway Setup Notebook v0.2.3](https://github.com/ecotte/fabric-platform-monitoring/blob/v0.2.3/gateway-monitoring/src/fabric-platform-monitoring/setup/Gateway%20Monitoring%20Setup.Notebook/notebook-content.py)。  
-> **范围：** 当前 fork 的 `monitoring/fabric-platform-monitoring/gateway/`，加上本次 **2026-11-20 已通过 POC 验证的两项已验证的 KQL Schema Function 变更**：`monitoring/fabric-platform-monitoring/src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`。其他 Fabric Report/Semantic Model、Capacity、Inventory 等未改动。
+> **范围：** 当前 fork 的 `monitoring/fabric-platform-monitoring/gateway/`，加上本次 **2026-11-20 通过 POC 验证的两项 KQL Schema Function 变更**：`monitoring/fabric-platform-monitoring/src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`。其他 Fabric Report/Semantic Model、Capacity、Inventory 等未改动。
 
 [返回总览](../README.md) · [POC 状态](POC_STATUS.md) · [复现步骤](DEPLOYMENT_RUNBOOK.md)
 
@@ -61,7 +61,7 @@ workspace_id = notebookutils.runtime.context["currentWorkspaceId"]
 
 **注意：** 最终提交的这两份 Notebook 没有再在真实 Fabric Workspace 中重跑；需要下一次在新目标环境验证，而不能把代码审阅视为部署成功。
 
-## 2. Heartbeat 的唯一已验证源码修复
+## 2. Heartbeat 的已验证源码修复（历史记录）
 
 **官方代码：**
 
@@ -95,7 +95,7 @@ Add-MsgEventHub -msg $msg -connectionType "Heartbeat" -config $config
 
 - 没有把未完成的 Tail Collector 当作已经实施的代码；目前在 POC 上实际运行的是**原始 Move Uploader**，尚未证明长期稳定性。
 - 没有把经讨论的 Kafka、Fluent Bit、Vector、C# Worker 等方案描述为已经选型或部署。
-- **2026-11-20 例外：** 已将 POC 验证通过的 `parse_QueryStreamingReport`、`parse_QueryExecutionAggregationReport` 同步至 fork `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，对应[旧版完整快照](../evidence/2026-11-17/DatabaseSchema.source.kql)和[验收证据](../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)。**没有**改动 Mashup 或其它 KQL Functions/Policies，也未触碰 Report/Capacity/Inventory。
+- **2026-11-20 例外：** 已将 POC 验证通过的 `parse_QueryStreamingReport`、`parse_QueryExecutionAggregationReport` 同步至 fork `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，对应[旧版完整快照](../evidence/2026-11-17/DatabaseSchema.source.kql)、[Streaming 验收](../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)和[Aggregation 验收](../evidence/2026-11-20/AGGREGATION_FOLLOWUP_REVIEW.md)。**没有**改动 Mashup 或其它 KQL Functions/Policies，也未触碰 Report/Capacity/Inventory。
 - 未来 Jumpstart `update_existing=True` 可能覆盖 Fabric 托管 Items；应先评估差异和备份，再决定是否执行。
 
 **2026-11-13 新发现（仅部署时观察与记录，未改源码）：** 原 Uploader 的 History 合并发生在**上传之后**，按文件名前缀、当天创建、低于 100 MiB 选择本地归档文件；与 Gateway 自身的 100 MiB / 10 个源日志轮转独立。用户计划 POC 连续观察后，以独立 Staging 和事件时间 cutoff 测试 PROD 首次 Backfill，不直接上传所有生产历史日志。详见 [架构运维](ARCHITECTURE_OPERATIONS.md) 与 [状态记录](POC_STATUS.md)。

@@ -9,8 +9,8 @@
 - **分支：** `docs/gateway-monitoring-poc-20261112`（不得改用 main）。
 - 查询文件：[3-mashup-additional-metrics.kql](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/value-checks/3-mashup-additional-metrics.kql)
 - Candidate（**只用于阅读，不得执行**）：[3-parse_MashupEvaluationReport.kql](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/candidates/3-parse_MashupEvaluationReport.kql)
-- 既有 Schema Check（2026-11-17 已通过 17/17）：[3-schema-check ](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/schema/3-schema-check-parse_MashupEvaluationReport.kql)
-- 已验证的 Dry-run：[3-dryrun ](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/dryrun/3-dryrun-parse_MashupEvaluationReport.kql)
+- 既有 Schema Check（2026-11-17 已通过 17/17）：[3-schema-check](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/schema/3-schema-check-parse_MashupEvaluationReport.kql)
+- 已验证的 Dry-run：[3-dryrun](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/dryrun/3-dryrun-parse_MashupEvaluationReport.kql)
 - 项目最新状态：[STATUS.md](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/STATUS.md)
 
 ## 2. 本地 MCP 只读执行要求
