@@ -13,5 +13,4 @@
 | ADR-007 | 2026-11-17 | 单人项目精简管理，不设 Owner / Assignee；项目说明统一中文 | 已采纳：入口清晰、追踪可审计，保持维护成本低 |
 
 详细理由参见 [架构与运维](../docs/ARCHITECTURE_OPERATIONS.md)、[Parser 审计](../docs/PARSER_SCHEMA_AUDIT.md)、[Manifest 设计](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md)。
-
 | ADR-008 | 2026-11-20 | **建议**先在 POC 单独部署 Streaming Parser，再逐一处理 Aggregation / Mashup | **待用户人工确认；尚未实施。** Preflight 4/4 通过，但三个函数都通过事务性 Update Policy 被实时使用；一轮只变一个函数易定位/回滚；Mashup 新增 TotalBytes 风险须先检查 |
