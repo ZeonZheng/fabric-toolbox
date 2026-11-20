@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-20 14:19–14:22（UTC+8）— Streaming Candidate 已手工应用，Postcheck 暂不能判定
+
+- 用户在确认的 POC Fabric UI 手工执行 `parse_QueryStreamingReport` Candidate，回归 UTC 起点 **2026-11-20T06:19:18.0313089Z**。
+- 本地 `eventhouse-remote` MCP 的 Postcheck 执行成功：Live Function 存在、Body hash 与旧 Preflight 不同、Update Policy 仍 Enabled/Transactional、相关 ingestion failures **0 observed**；但 Patch 后 Raw **0**、Parsed **0**、KeyCheck **0**，因此严格结论为 **Inconclusive**。
+- 最新旧 Raw `logDate` 06:11:46Z、Parsed 最新摄入 06:11:47Z，都在 Patch 之前。Streaming 本就低频；现在没有故障证据，但**没有修复成功的证据**。
+- 已归档 [脱敏原报告](../evidence/2026-11-20/gateway-streaming-postcheck-20261120-1422-SGT.sanitized.md)、[独立复核](../evidence/2026-11-20/STREAMING_POSTCHECK_REVIEW.md)，新增两份只读检查：Raw 所有类型活跃度 / Parsed 全表 Duration 非空率，以及 [本地 AI 提示词](../kql/poc-parser-fix-20261117/controlled-rollout/FOLLOWUP_AI_PROMPT.md)。**尚未回滚、未动 Aggregation / Mashup / PROD**。
+
 ## 2026-11-20 10:36–10:47（UTC+8）— Eventhouse MCP Preflight 通过，进入 POC Patch 人工评审
 - 本地 AI 通过 `eventhouse-remote.executeQuery` 只读执行 4/4 Preflight；三个目标 Function Body 与 2026-11-17 基线 **3/3 SHA256 精确一致**；3/3 Update Policies 均 Enabled/Transactional/Source Raw；Raw+Parsed 6/6 有数据；最近 2 小时 `0 observed` ingestion failures。**没有 Eventhouse 写操作**。
 - 报告额外发现：Aggregation 6 列/Streaming 2 列新数据仍全 null；Mashup `TotalBytes` 2797/2797 null，Raw 存在该字段；Streaming 有 3 个 Raw-only 字段在目标 Parsed schema 中缺失。

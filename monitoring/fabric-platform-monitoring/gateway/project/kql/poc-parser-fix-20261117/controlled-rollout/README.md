@@ -1,6 +1,6 @@
 # POC Streaming Parser｜你和本地 AI 各做什么（简明操作版）
 
-> **2026-11-20。仅适用于已人工确认的 POC Eventhouse。** Function 还**没有**部署修复。本指南不是要求一口气修改三个 Parser。
+> **更新 2026-11-20 14:22（UTC+8）。** 用户已在 POC 手工应用 Streaming Candidate。**不要重复执行 Step 1**。下面的 A 部分保留作为已执行操作记录，当前验证从 [FOLLOWUP_AI_PROMPT.md](FOLLOWUP_AI_PROMPT.md) 继续；14:22 Postcheck 无新 Streaming 样本，因此 Inconclusive。
 > 
 > **职责分工：你只手动执行一次写命令；本地 AI / Eventhouse Remote MCP 只负责只读检查与报告；ChatGPT 评审是否成功。**
 
@@ -50,6 +50,8 @@ print RecordedAfterPatchUTC = now()
 **如果你不想自己执行查询验证，做到这里就可以停止。** 只读检查交给 MCP。
 
 ## B. 本地 AI + Eventhouse Remote MCP 执行（只读）
+
+**2026-11-20 14:22 更新：** 已完成首轮 Postcheck，因 Raw/Parsed 均无 Patch 后 Streaming 新记录，判定 Inconclusive。**现在优先执行 [补充只读检查](FOLLOWUP_AI_PROMPT.md)，不应再次部署。**
 
 使用 [**POSTCHECK_AI_PROMPT.md**](POSTCHECK_AI_PROMPT.md)，替换其中 `<RecordedAfterPatchUTC>` 为上述实际 UTC 时间，再将 Prompt 交给本地 AI。它会执行本目录已有的三份只读查询：
 

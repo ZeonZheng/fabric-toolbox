@@ -5,7 +5,7 @@
 | 阶段 | 关键交付 / 通过条件 | 状态 |
 | --- | --- | --- |
 | **P0 — Functional POC** | Gateway → Fabric → Report 链路、8 种 Report、Heartbeat / NodeInfo 功能可用 | **功能性验收完成**；不含可靠性保证 |
-| **P1 — Data Correctness** | 所需 Raw 字段均正确映射；Schema、数值、回归合格；KQL 修复与 Rollback 可复现 | **进行中**：Dry-run 3/3、Schema 39/39、数值/单位样本已通过；DataSource 等价 235/235 已通过；2026-11-20 MCP Preflight 4/4 通过（只允许进入人工 Review）；POC 分函数部署与新摄入回归仍待执行；Mashup TotalBytes 额外检查待执行 |
+| **P1 — Data Correctness** | 所需 Raw 字段均正确映射；Schema、数值、回归合格；KQL 修复与 Rollback 可复现 | **进行中**：Dry-run 3/3、Schema 39/39、数值/单位样本已通过；DataSource 等价 235/235 已通过；2026-11-20 MCP Preflight 4/4 通过（只允许进入人工 Review）；Streaming 第一个 Function 已由用户手工修改（2026-11-20）；首次 Postcheck 因 Patch 后 Streaming 样本为 0 而 Inconclusive；Aggregator/Mashup 仍未部署；Mashup TotalBytes 额外检查待执行 |
 | **P2 — Collector Reliability** | 文件/记录/批次可对账，轮转、部分失败、重试、去重、资源开销及长时间运行通过 | 未完成 |
 | **P3 — PROD Architecture** | Upload Manifest 方案、保留/回放、Event-time Backfill、多节点、安全与监控达成技术决策 | 规划中 |
 | **P4 — Limited PROD Pilot** | 受控部署、验证看板、Rollback、运维交接及实际验收 | 尚未批准 |
