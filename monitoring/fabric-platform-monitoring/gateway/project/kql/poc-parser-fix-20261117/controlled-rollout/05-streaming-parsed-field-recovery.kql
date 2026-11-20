@@ -1,0 +1,11 @@
+// 只读：检视整个 Parsed QueryStreamingReport 是否首次出现非空指标。
+// 避免仅按 StreamingStartTimeUTC（业务时间）过滤而遗漏迟到上报；不证明 exactly-once。
+QueryStreamingReport
+| summarize
+    AllRows = count(),
+    StreamingDurationNonNull = countif(isnotnull(StreamingDuration_ms_)),
+    SpoolingDurationNonNull = countif(isnotnull(SpoolingDiskReadingDuration_ms_)),
+    BothNonNull = countif(isnotnull(StreamingDuration_ms_) and isnotnull(SpoolingDiskReadingDuration_ms_)),
+    LastBusinessTimeUTC = max(StreamingStartTimeUTC),
+    NewestValidStreamingBusinessTimeUTC = maxif(StreamingStartTimeUTC, isnotnull(StreamingDuration_ms_)),
+    NewestValidSpoolingBusinessTimeUTC = maxif(StreamingStartTimeUTC, isnotnull(SpoolingDiskReadingDuration_ms_))

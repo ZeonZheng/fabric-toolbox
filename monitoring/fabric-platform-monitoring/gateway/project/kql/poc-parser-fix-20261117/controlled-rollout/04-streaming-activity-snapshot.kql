@@ -1,0 +1,12 @@
+// 只读：检查 GatewayReports-Raw 全部 logType 的活动情况，不修改 Eventhouse。
+// 这里的 logDate 是消息 Envelope 时间，不能等同于真实 ingestion_time()。
+// RecordedAfterPatchUTC = 2026-11-20 06:19:18 UTC（用户给定的保守回归时间起点）。
+let PatchUtc = datetime(2026-11-20T06:19:18.0313089Z);
+['GatewayReports-Raw']
+| summarize
+    TotalEnvelopes = count(),
+    EnvelopesSincePatchLogDate = countif(logDate >= PatchUtc),
+    TotalEmbeddedRecords = sum(array_length(log)),
+    LatestEnvelopeTimeUTC = max(logDate)
+  by logType
+| order by logType asc
