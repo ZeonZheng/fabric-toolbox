@@ -18,7 +18,7 @@
 ## B. 新发现 / 需澄清
 
 1. **GW-001 现场仍在复现：** Aggregation 6 个 Duration 字段、Streaming 2 个 Duration 字段，在旧 Parsed Table 中均 **100% null**；11 月 20 日新数据仍存在。已确认 Raw 包含括号命名的原始 Key；本分支 Candidate 使用显式 `record["...(ms)"]` 读取，之前 Dry-run + Schema + 数值和 DataSource 一致性检查通过。
-2. **GW-001 扩大 Mashup 验证范围：** 报告中 `MashupEvaluationReport.TotalBytes` **2797/2797 null**，但 Raw 键存在；原版 `bag_unpack` 用 `TotalBytes:long`，Raw 字段是 string。候选使用 `tolong(record.TotalBytes)`，**合理但尚未单独量化 ConversionLoss / NonNull**。此外 `TotalRows`、`AveragePercentProcessorTime`、`MaxPercentProcessorTime`、`AverageIODataBytesPerSecond`、`MaxIODataBytesPerSecond` 需检查新候选对已有字段有无回归。
+2. **GW-001 扩大 Mashup 验证范围：** 报告中 `MashupEvaluationReport.TotalBytes` **2797/2797 null**，但 Raw 键存在；原版 `bag_unpack` 用 `TotalBytes:long`，Raw 字段是 string。候选使用 `tolong(record.TotalBytes)`，**合理但尚未单独量化 ConversionLoss / NonNull**。此外 `TotalRows`、`AveragePercentProcessorTime`、`MaxPercentProcessorTime`、`AverageIODataBytesPerSecond`、`MaxIODataBytesPerSecond` 需检查新候选对已有字段有无回归。**原 Preflight 摘要中“AveragePercentProcessorTime 约 36–40% null”与详细表不一致：表内 1336/2797 ≈ 47.8% null；应以详细值为准。** `AverageIODataBytesPerSecond` 的 null 数 1566/2797 ≈ 56.0%。
 3. **GW-005 Streaming 标准 Parsed schema 丢失 3 个 Raw 字段：** `StreamingTrackingId`、`StreamingDelayDuration(ms)`、`StreamingPacketsDuration(ms)`（报告仅 1 个 envelope 抽样）；本次最小 POC Function 修复**不改 Schema**，另设缺口验收。
 4. **Folder 差异：** 报告 B 节称 `parse_QueryStartReport_csv` live folder=`Parsers`，baseline=`UpdatePolicyFunctions`，但另一节称 15/15 Folder 一致。此处存在报告内部矛盾，须保留为“元数据差异待复核”，**不影响本次 3 个目标 Parser 的 Body 3/3 相符**。
 5. **POC 身份：** 缺少 workspace/capacity 直接核验。**执行任何 DDL 之前必须由用户在 Eventhouse UI 明确确认目标是 POC**。
