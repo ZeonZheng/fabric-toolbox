@@ -1,5 +1,4 @@
-// POC CANDIDATE ONLY. Not validated in a live KQL engine. Do NOT apply before dry-run tests.
-// May cause transactional source ingestion failure if schema/type incompatible.
+// POC APPLIED 2026-11-20 ~15:24 UTC+8; live Body matches this candidate, but post-deploy metric recovery INCONCLUSIVE (0 new rows).\n// DO NOT RE-RUN. Retain rollback. Transactional Update Policy risk remains until new records are verified.
 .create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from QueryExecutionAggregationReport") parse_QueryExecutionAggregationReport() {
 ['GatewayReports-Raw']
 | where logType == "QueryExecutionAggregationReport"

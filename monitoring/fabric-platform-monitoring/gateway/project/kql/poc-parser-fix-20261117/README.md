@@ -16,7 +16,7 @@
 | [dryrun/](dryrun/) | **否（只读）** | `let Candidate = () {...}`，用非空计数初步验证 |
 | [schema/](schema/README.md) | **否（只读）** | **已通过 3/3，39/39 列匹配** |
 | [value-checks/](value-checks/README.md) | **否（只读）** | 数值/单位检查已通过；[DataSource 内容等价性查询](value-checks/DATASOURCE_README.md) 已通过（235/235） |
-| [candidates/](candidates/) | **是（变更 Function）** | Streaming **已部署通过，勿重复运行**；Aggregation / Mashup 待受控部署 |
+| [candidates/](candidates/) | **是（变更 Function）** | Streaming **已部署通过，勿重复运行**；Aggregation **已手工部署、待新数据验证**；Mashup 待受控部署 |
 | [rollback/](rollback/) | **是（回滚 Function）** | 以实际部署导出的旧 Body 恢复，必须确认现场版本后使用 |
 
 备份：[15 个实际 Function Body](../../evidence/2026-11-17/DeployedFunctions.full.export.csv) · [142 行 Schema](../../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) · [字段审计](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md)。

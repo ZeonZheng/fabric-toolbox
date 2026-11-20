@@ -1,6 +1,6 @@
 # POC Aggregation Parser｜第二轮单函数修复指南
 
-> **状态：尚未修改 Aggregation Function。** Streaming 已在 POC 用新数据 32/32 验证通过。**请仅在确认是 POC 的环境操作**；本地 MCP 只能做只读检查。
+> **2026-11-20 15:29 状态更新：Aggregation Candidate 已由用户手工在 POC 部署，**Body 匹配，但因没有新 Aggregation 数据，回归为 **Inconclusive**。**不要重复运行下面的 Step 2**。当前执行 [MCP Follow-up Prompt](AGGREGATION_FOLLOWUP_AI_PROMPT.md)；后文手动步骤仅保留为历史操作说明。
 
 ## 你手动执行（三步）
 

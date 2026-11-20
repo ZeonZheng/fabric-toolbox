@@ -1,13 +1,13 @@
 # AI / 技术交接说明
 
-> 更新时间：2026-11-20 14:48（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
+> 更新时间：2026-11-20 15:29（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
 
 ## 固定背景
 
 - 当前 POC 是 **单 Gateway Cluster、单 Node**；项目路径 `monitoring/fabric-platform-monitoring/gateway/project/`；工作分支 `docs/gateway-monitoring-poc-20261112`。
 - `project/` 是**我们的工作区**；Vendor PowerShell / Scheduler / Report 以及 `src/Gateway/` 仍留在上游位置，避免影响上游升级差异比对。已确认的 Heartbeat 修改详见 [UPSTREAM_CHANGES](docs/UPSTREAM_CHANGES.md)。
 - Uploader 原始实现为 `Move → Temp → Eventstream → History`，8 种 Report CSV 已观察到；`HTTP 201` 不等于端到端 Exactly-once。
-- KQL 已获得 15/15 实际部署 Function Body 和 142 行 Schema；部署 Body 与 GitHub 源码一致。3 个 Parser 的只读修复候选成功恢复非空，**Schema 39/39 已通过**，13 个数值转换项在当前 Raw 样本中零丢失、零超阈值差异；Aggregation / Streaming 235/235 条 DataSource 规范化值与 Legacy 一致；Mashup 103 条 Raw 无 Kinds/Paths 独立 Key。**2026-11-20 用户已手工执行 Streaming Function DDL；Aggregation / Mashup 尚未更改**。
+- KQL 已获得 15/15 实际部署 Function Body 和 142 行 Schema；部署 Body 与 GitHub 源码一致。3 个 Parser 的只读修复候选成功恢复非空，**Schema 39/39 已通过**，13 个数值转换项在当前 Raw 样本中零丢失、零超阈值差异；Aggregation / Streaming 235/235 条 DataSource 规范化值与 Legacy 一致；Mashup 103 条 Raw 无 Kinds/Paths 独立 Key。**2026-11-20 用户已手工执行 Streaming 和 Aggregation Function DDL；Mashup 未更改**。
 - Eventhouse `GatewayReports-Raw` 默认 1 天保留，Parsed 大多 3650 天。40 个合并 History 文件 + 2 个 Source 文件不能证明全部记录均被上传。
 - **PROD 尚未获准**；Upload Manifest 是候选设计，不是已实现能力。
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点：** `parse_QueryStreamingReport` 已于 2026-11-20 14:19 后在 POC 更新，14:22–14:48 Follow-up **Passed**：现场 Body 和 Candidate 逐字节相同、新 Parsed 32/32 两项 Duration 非空、Raw/Parsed 32/32 值一致、0 Policy failures。已将此已验证 Function 写入 fork 正式 KQL Schema 文件，**不是另一次 Eventhouse 部署**。总体 GW-001 未关闭，Aggregation/Mashup 尚未改动。下一步由用户手动按 [Aggregation Runbook](kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_RUNBOOK.md) 单独修复，MCP 做只读回归；Streaming 24h 观察独立进行。证据：[2026-11-20](evidence/2026-11-20/README.md)。
+**当前交接点（请以 STATUS 为最新真相）：** Streaming 于 2026-11-20 14:48 首轮功能回归 Passed（32/32）。Aggregation 15:24 已在 POC 手工部署 Candidate，PatchUtc `2026-11-20T07:24:24.1258875Z`，15:29 Postcheck 因 Raw/Parsed 0/0 为 Inconclusive；Body 与 Candidate 逐字节一致，0 observed failures。**不要重复部署或自动回滚**，先通过 [Aggregation MCP Follow-up](kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_FOLLOWUP_AI_PROMPT.md) 确认新数据。报告所称 Query 07 字段引用 Bug 与 GitHub 实际代码不符，已独立确认 12/12 比较表达式正确。Mashup 未改，PROD 未改。证据见 [2026-11-20](evidence/2026-11-20/README.md)。

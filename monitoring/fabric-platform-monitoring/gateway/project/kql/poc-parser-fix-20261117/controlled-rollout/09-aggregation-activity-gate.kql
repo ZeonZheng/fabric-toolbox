@@ -1,0 +1,23 @@
+// 只读；2026-11-20 Aggregation 变更后新数据到达判定。
+// Raw.logDate 为 Envelope 时间；Parsed.ingestion_time() 为 Eventhouse 摄入时间。含 1 天 Raw 保留窗口限制。
+// 只显示按 logType 聚合的计数，永不输出 QueryText、IDs 或 DataSource。
+let PatchUtc = datetime(2026-11-20T07:24:24.1258875Z);
+let Raw =
+    ['GatewayReports-Raw']
+    | summarize TotalEnvelopes=count(),
+                AfterPatchEnvelopes=countif(logDate >= PatchUtc),
+                AfterPatchEmbeddedRecords=sumif(toint(array_length(log)), logDate >= PatchUtc),
+                LatestUTC=max(logDate)
+       by logType
+    | extend Layer="Raw (logDate)", TotalParsed=long(null), AfterPatchParsed=long(null);
+let Parsed =
+    QueryExecutionAggregationReport
+    | summarize TotalParsed=count(),
+                AfterPatchParsed=countif(ingestion_time() >= PatchUtc),
+                LatestUTC=max(ingestion_time())
+    | extend Layer="Parsed (ingestion_time)", logType="QueryExecutionAggregationReport",
+             TotalEnvelopes=long(null), AfterPatchEnvelopes=long(null), AfterPatchEmbeddedRecords=long(null);
+union Raw, Parsed
+| project Layer, logType, TotalEnvelopes, AfterPatchEnvelopes,
+          AfterPatchEmbeddedRecords, TotalParsed, AfterPatchParsed, LatestUTC
+| order by logType asc, Layer asc

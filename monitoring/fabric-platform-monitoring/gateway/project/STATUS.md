@@ -1,31 +1,28 @@
 # Gateway Monitoring｜当前状态
 
-> **更新：** 2026-11-20 14:48（Asia/Singapore）｜**阶段：** P1 Parser 数据准确性（Streaming 功能性修复已通过）｜**环境：** POC 单节点｜**PROD：** 尚未批准
+> **更新时间：** 2026-11-20 15:29（Asia/Singapore）｜**当前阶段：** P1 Parser 字段准确性修复｜**POC：** 单节点｜**PROD：** 未批准
 
-| 工作项 | 当前状态 | 实测依据 / 验收边界 |
+| 工作项 | 现状 | 证据 / 限制 |
 | --- | --- | --- |
-| Gateway → Fabric → Report | **POC 功能链路已验证** | 8 种 Report Raw 类型在 2026-11-20 Patch 后均有新 Envelope；不能证明 Uploader 无丢失、无重复 |
-| **Streaming Parser** | **已部署；首轮功能回归 Passed** | 现场 Body 与 GitHub Candidate **逐字节一致**；Patch 后 32/32 Parsed 行两个 Duration 均非空，Raw / Parsed 32/32 双指标匹配、0 mismatch |
-| Streaming Update Policy | **保持正常** | Enabled、Transactional、Source Raw；Post-Patch **0 observed** ingestion failures |
-| Streaming 历史与长时间稳定性 | **未完成** | 历史 2675 行两个 Duration 仍全 null；仅约 25 分钟、32 行样本；后续持续观察不等于此时功能回归失败 |
-| Aggregation Parser | **待 POC 受控部署** | 6 Duration 的 Dry-run / Schema / 数值只读测试先前通过，旧 Function 未修改 |
-| Mashup Parser | **待额外测试与受控部署** | 旧 Parsed TotalBytes 2797/2797 null；部署前单独测试该字段和其他数值转换，旧 Function 未修改 |
-| GitHub Source of Truth | **Streaming 已同步** | fork `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql` 仅替换已验证的 Streaming Function；原始定义在 dated baseline，可回滚；**未对 Eventhouse 再部署** |
-| PROD Collector 可靠性 | **未验收** | GW-002～GW-007：File/Batch Manifest、幂等、重试、Retention、Multi-node、隐私、生产回填 |
+| Gateway → Fabric → Report | **功能 POC 通过** | 八类 Report 在此前窗口都有入库数据，但端到端不丢失/不重复未验收 |
+| **Streaming Parser** | **POC 新数据功能回归 Passed** | 已部署，与 Candidate Body 逐字节一致；32/32 新 Parsed 两个 Duration 非空、Raw 对照 32/32、0 mismatch；24h 稳定性/历史回填另议 |
+| **Aggregation Parser** | **已在 POC 手工部署，回归 Inconclusive** | 实际 PatchUtc `2026-11-20T07:24:24.1258875Z`；现场 Body 与 Candidate 一致（SHA256 `626cb510…c7f21`）；15:29 Postcheck Raw 0 / Parsed 0，六 Duration 无可比新样本 |
+| Aggregation Update Policy | **配置正常，无当前失败证据** | Enabled、Source Raw、Transactional；Patch 后 `0 observed` failures，不能据此认定修复成功 |
+| Mashup Parser | **未部署** | Raw/Parsed 字段映射仍有缺陷，`TotalBytes` 等需额外检查 |
+| GitHub 源码 | **仅 Streaming 已同步正式 Schema** | Aggregation 的 Candidate/回滚/只读检查均已备齐，但因回归未通过，**正式 `DatabaseSchema.kql` 暂不修改 Aggregation** |
+| PROD Collector / Upload Manifest | **未验收** | GW-002～GW-007：文件/批次级对账、重试幂等、Retention、Multi-node 等仍待验证 |
 
-## 2026-11-20 最新验收证据
+## 2026-11-20 证据
 
-**Patch 验证起点：** `2026-11-20T06:19:18.0313089Z`（新加坡 14:19:18）。
-
-- 14:22 首轮 Postcheck 因没有新 Streaming 记录为 **Inconclusive**；[第一次报告](evidence/2026-11-20/STREAMING_POSTCHECK_REVIEW.md)。
-- 14:22–14:48 Follow-up **Passed**：Streaming Raw 5 个新 Envelope，展开 32 行；Parsed 32 行，两项 Duration **32/32 非空并与 Raw 逐值一致**，0 mismatch；历史 2675 行仍 null。现场 Function 的 Body 与 Candidate 严格一致（SHA256 `587bba1a…703ac`）；Policy 未变，0 observed failures。
-- [Follow-up 原始脱敏报告](evidence/2026-11-20/gateway-streaming-followup-20261120-1445-SGT.sanitized.md) · [独立复核](evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)。
-- **结论适用范围：** 仅 Streaming 修复后的新记录在这批样本中恢复正确；不是原始日志的完整采集/Exactly-once 证明，也未授权 PROD。
+- Streaming **14:48 Passed**：[实测报告](evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)。
+- Aggregation **15:25–15:29 Inconclusive**：[脱敏原报告](evidence/2026-11-20/gateway-aggregation-postcheck-20261120-1525-SGT.sanitized.md) · [独立评审](evidence/2026-11-20/AGGREGATION_POSTCHECK_REVIEW.md)。
+- **原报告关于 Query 07“错误引用字段”的说法不符合当前 GitHub 代码。** 已逐项核对 6 个指标的 Matches/Mismatches 共 12 个表达式，均正确。没有据此改动原查询。
+- 上次 Aggregation Raw 最新 `logDate=2026-11-20T06:45:45Z`（在本次 Patch 之前）；原报告所谓“其它类型在 Patch 后正常”引用了更早的 Streaming 验证，应重新检测。
 
 ## 当前唯一下一步
 
-**对第二个对象 `parse_QueryExecutionAggregationReport` 做一次 POC 受控变更。** 参照 [Aggregation 操作指南](kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_RUNBOOK.md)：在 Fabric UI 人工确认 POC、打开回滚文件、**仅运行 Aggregation Candidate 一次**、记录实际 UTC；部署后的检查交由本地 Eventhouse Remote MCP，返回完整 Markdown 报告再评审。**不要同时修改 Mashup，不要重跑 Streaming Candidate。**
+让本地 AI 使用 Eventhouse Remote MCP，执行 [**Aggregation Follow-up（完整地址及输出契约）**](kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_FOLLOWUP_AI_PROMPT.md)。先跑只读 [Activity Gate](kql/poc-parser-fix-20261117/controlled-rollout/09-aggregation-activity-gate.kql)；若有部署后 Aggregation 新样本，再用**同一 Patch UTC**执行 06/07/08，逐字段核对 6 个 Duration 并提供脱敏 Markdown 报告。
 
-**并行观察（非本轮单一操作）：** Streaming 的 24h 稳定性及历史 null 是否回填为后续独立事项；GW-001 作为总体问题保持进行中。
+**禁止**重复执行 Aggregation Candidate、自动回滚、修改 Mashup、触碰 PROD。确认出现摄入失败或数值错误时再人工评审回滚；无样本时仍保持 Inconclusive。不要以猜测的固定“30–60 分钟”作为验收依据。
 
-[问题台账](tracking/ISSUES.md) · [进展](tracking/CHANGELOG.md) · [源码差异](docs/UPSTREAM_CHANGES.md)。
+[GW-001](tracking/ISSUES.md) · [Changelog](tracking/CHANGELOG.md)。

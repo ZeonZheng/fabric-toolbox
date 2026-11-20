@@ -9,6 +9,7 @@
 | [2026-11-20 MCP Preflight](2026-11-20/README.md) | 本地 AI 执行的脱敏结果与独立技术评审，含 Function SHA256 / Policy / Raw-Parsed / failures | 4/4 通过，**只可进入人工 Patch 评审**；额外发现 Mashup TotalBytes、Streaming 缺字段等问题 |
 | [历史 POC 测试](../docs/POC_STATUS.md) | 2026-11-12～11-17 多轮测试细节 | 补充历史环境、已知问题和数据流证据 |
 
+- **2026-11-20 Aggregation Postcheck：** [首次 Inconclusive 与独立评审](2026-11-20/AGGREGATION_POSTCHECK_REVIEW.md)，现场 Body 匹配但 Patch 后 Raw/Parsed 0/0，六指标待新数据验证。
 - **2026-11-20 Streaming Postcheck：** [首次 Inconclusive → Follow-up Passed](2026-11-20/README.md)。新 Parsed 32/32 双 Duration 恢复，Raw 对照 32/32 匹配；24h/端到端完整性仍未验收。
 
 **安全与准确性：** 这些是导出/记录快照，**不是能够恢复的 Eventhouse 物理数据库备份**。不上传 QueryText、原始 Gateway CSV、SAS、Secrets 或未经脱敏的环境标识。

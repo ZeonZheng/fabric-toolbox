@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-20 15:24–15:29（UTC+8）— Aggregation 已部署，首次回归 Inconclusive
+- 用户在 POC 手工执行 `parse_QueryExecutionAggregationReport` Candidate；真实 Patch UTC `2026-11-20T07:24:24.1258875Z`。本地 MCP 15:25–15:29 验证：Body 逐字节匹配 Candidate，SHA256 `626cb510…c7f21`，Policy Enabled/Transactional；Patch 后 Raw=0、Parsed=0、Policy failures 0 observed。**因无新记录，六个 Duration 尚不能判定修复成功。**
+- 已归档 [原报告](../evidence/2026-11-20/gateway-aggregation-postcheck-20261120-1525-SGT.sanitized.md) 和 [独立评审](../evidence/2026-11-20/AGGREGATION_POSTCHECK_REVIEW.md)。暂不回滚，也**不修改 Mashup / PROD**。
+- 独立逐项审计 GitHub 查询 `07-aggregation-postdeploy-keycheck.kql`：6 个指标 × Matches/Mismatches **12/12 引用正确**，报告第 8 节复制粘贴 Bug 指控与当前实际文件不符，因此**未修改正确的查询表达式**。
+- 之前 Streaming Follow-up 的 Raw 活跃记录早于 Aggregation Patch，不能当作本次 Patch 后证据。新增只读 [Activity Gate](../kql/poc-parser-fix-20261117/controlled-rollout/09-aggregation-activity-gate.kql) 与 [AI Follow-up Prompt](../kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_FOLLOWUP_AI_PROMPT.md)。
+- GitHub 正式 `DatabaseSchema.kql` **仅 Streaming 已同步**；Aggregation 因尚未完成新数据验收，仍不修改正式 Schema。
+
 ## 2026-11-20 14:22–14:48（UTC+8）— Streaming Parser 部署后新数据回归 Passed
 - 本地 `eventhouse-remote` MCP 只读 Follow-up：现场 Function Body **逐字节匹配 Candidate**（规范化 SHA256 `587bba1a…703ac`）；Policy Enabled/Transactional，未观察到新摄入失败。
 - **Patch 后 Streaming Raw 5 个 Envelope / 32 行，Parsed 新增 32 行**；两项 Duration 均 **32/32 非空**，通过 KeyCheck 与 Raw **32/32 逐值一致，0 mismatch**。历史 2675 Parsed 行依然 null。
