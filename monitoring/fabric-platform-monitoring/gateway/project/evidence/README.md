@@ -9,6 +9,7 @@
 | [2026-11-20 MCP Preflight](2026-11-20/README.md) | 本地 AI 执行的脱敏结果与独立技术评审，含 Function SHA256 / Policy / Raw-Parsed / failures | 4/4 通过，**只可进入人工 Patch 评审**；额外发现 Mashup TotalBytes、Streaming 缺字段等问题 |
 | [历史 POC 测试](../docs/POC_STATUS.md) | 2026-11-12～11-17 多轮测试细节 | 补充历史环境、已知问题和数据流证据 |
 
+- **2026-11-20 Mashup Precheck：** [Blocked 报告和独立评审](2026-11-20/README.md)，TotalBytes 243/243、TotalRows 34/34、MaxIO 127/127 Raw 有值却无法转换，需重新设计；Mashup 仍未部署。
 - **2026-11-20 Aggregation Postcheck：** [首次 Inconclusive → Follow-up Passed](2026-11-20/README.md)。新 Raw/Parsed 均 7 行、2/2 唯一组合 Key 的六项有值字段与 Raw 匹配，0 mismatch；长时间观察和完整性仍未验收。
 - **2026-11-20 Streaming Postcheck：** [首次 Inconclusive → Follow-up Passed](2026-11-20/README.md)。新 Parsed 32/32 双 Duration 恢复，Raw 对照 32/32 匹配；24h/端到端完整性仍未验收。
 

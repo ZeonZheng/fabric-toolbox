@@ -7,7 +7,7 @@
 
 ## 30 秒了解项目
 
-已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC 分别手工应用 Streaming 与 Aggregation 修复；**两项功能回归均通过**：Streaming 32/32 新行双指标与 Raw 匹配，Aggregation 7 条新 Raw/Parsed 行、2/2 组合 Key 的六项有值字段与 Raw 匹配，0 mismatch。两项已同步 fork 正式 KQL Schema。**Mashup 尚未部署**，在补做 `TotalBytes` 等六项只读转换检查之后再决定修复。上传完整性、长期稳定性与历史数据回填仍未验收。详见 [2026-11-20 两项验证](evidence/2026-11-20/README.md)。
+已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC 分别手工应用 Streaming 与 Aggregation 修复；**两项功能回归均通过**：Streaming 32/32 新行双指标与 Raw 匹配，Aggregation 7 条新 Raw/Parsed 行、2/2 组合 Key 的六项有值字段与 Raw 匹配，0 mismatch。两项已同步 fork 正式 KQL Schema。**Mashup 尚未部署且 Precheck Blocked**：TotalBytes、TotalRows 数组文本及 MaxIO 小数与目标标量类型不兼容；先核实数组语义/精度与 Schema 决策，不得部署旧 Candidate。上传完整性、长期稳定性与历史数据回填仍未验收。详见 [2026-11-20 两项验证](evidence/2026-11-20/README.md)。
 
 ## 快速导航（以此处为准）
 

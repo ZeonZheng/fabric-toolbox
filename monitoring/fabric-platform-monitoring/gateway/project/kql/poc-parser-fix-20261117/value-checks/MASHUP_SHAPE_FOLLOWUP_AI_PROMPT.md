@@ -7,7 +7,7 @@
 - 仓库：https://github.com/ZeonZheng/fabric-toolbox
 - **指定分支（不是 main）：** `docs/gateway-monitoring-poc-20261112`
 - 原始阻断报告及技术复核：`monitoring/fabric-platform-monitoring/gateway/project/evidence/2026-11-20/`
-- 当前状态：https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/value-checks/../../../STATUS.md
+- 当前状态：https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/STATUS.md
 - **本轮三份只读 KQL：**
   1. https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/value-checks/4-mashup-array-shape.kql
   2. https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/project/kql/poc-parser-fix-20261117/value-checks/5-mashup-array-length-distribution.kql

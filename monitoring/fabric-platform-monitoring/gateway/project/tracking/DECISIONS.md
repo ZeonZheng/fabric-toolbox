@@ -12,5 +12,8 @@
 | ADR-006 | 2026-11-17 | 首轮修复尽量保持现有 Parsed Table 结构；全字段长期留存另议 | 暂定：降低 Report / Model 兼容风险 |
 | ADR-007 | 2026-11-17 | 单人项目精简管理，不设 Owner / Assignee；项目说明统一中文 | 已采纳：入口清晰、追踪可审计，保持维护成本低 |
 
+| ADR-009 | 2026-11-20 | Mashup 的 `TotalBytes` / `TotalRows` 多值语义与 `MaxIO` 小数精度必须先验证，再决定标量聚合或 Schema 演进 | **待调研、未决策**：禁止擅自 sum/first、截断小数、直接修改目标表或部署旧 Candidate；参见 [Precheck Review](../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md) |
+
+| ADR-008 | 2026-11-20 | 按 Streaming → Aggregation → Mashup 顺序，单个 Parser POC 受控部署 | **部分实施**：Streaming、Aggregation 已手工部署并新数据 Passed；Mashup 因类型/数组转换 Blocked，未部署 |
+
 详细理由参见 [架构与运维](../docs/ARCHITECTURE_OPERATIONS.md)、[Parser 审计](../docs/PARSER_SCHEMA_AUDIT.md)、[Manifest 设计](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md)。
-| ADR-008 | 2026-11-20 | **建议**先在 POC 单独部署 Streaming Parser，再逐一处理 Aggregation / Mashup | **待用户人工确认；尚未实施。** Preflight 4/4 通过，但三个函数都通过事务性 Update Policy 被实时使用；一轮只变一个函数易定位/回滚；Mashup 新增 TotalBytes 风险须先检查 |

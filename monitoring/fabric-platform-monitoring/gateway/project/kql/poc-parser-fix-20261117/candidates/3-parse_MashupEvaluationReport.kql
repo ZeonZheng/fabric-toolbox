@@ -1,5 +1,6 @@
-// POC CANDIDATE ONLY. Not validated in a live KQL engine. Do NOT apply before dry-run tests.
-// May cause transactional source ingestion failure if schema/type incompatible.
+// BLOCKED / DO NOT DEPLOY (POC precheck 2026-11-20): TotalBytes 243/243, TotalRows 34/34, MaxIO 127/127 non-empty Raw -> null.
+// Raw TotalBytes/TotalRows are JSON array TEXT, MaxIO fractional text conflicts with target long. Pending semantics/Schema decision.
+// Keep this as a failing historical candidate; no Eventhouse DDL or PROD approval. Transactional Update Policy risk.
 .create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from MashupEvaluationReport") parse_MashupEvaluationReport() {
 ['GatewayReports-Raw']
 | where logType == "MashupEvaluationReport"

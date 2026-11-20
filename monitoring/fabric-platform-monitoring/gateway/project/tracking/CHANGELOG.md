@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-20 16:27–16:44（UTC+8；报告结束时间元数据有差异）— Mashup Precheck Blocked
+- 本地 `eventhouse-remote` MCP **只读**检查旧版 Mashup Function / Transactional Update Policy，现场未执行 Function DDL、Schema 或 Policy 修改。59 Raw Envelope / **379 内嵌记录**，查询均执行成功（两条辅助查询先报语法错再只读修正）。
+- **三个有值字段在现有 Candidate 中全部转换失败：** TotalBytes **243/243** (`long`；Raw 为 JSON 数组字符串，212 单元素+31 多元素)、TotalRows **34/34** (`real`；14 单元素+20 多元素)、MaxIODataBytesPerSecond **127/127** (`long`；Raw 是小数字符串，`toreal` 可读)。旧 Parsed 2862 行三列均 0 非空；**不是新部署造成的回归，但现有 Candidate 也修不好**。
+- 当前五个 Memory/Time 字段与另外三项 CPU/IO 指标样本转换正常；此前 17/17 Schema Match 只证明列结构，不能掩盖实际数值失败；`ChangedByCast=0` 在转换为 null 时没有精度验收意义。
+- 已归档 [用户报告](../evidence/2026-11-20/gateway-mashup-precheck-20261120-1626-SGT.sanitized.md) 和 [独立评审](../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md)；GW-001 继续 Blocked（Mashup 子项）、GW-005 增加多值与数值类型设计问题。两项已通过的 Streaming/Aggregation 不变。
+- 新增 3 个只读 KQL，检查数组形状、长度关联、数组内部元素类型与 MaxIO 小数；[本地 MCP 输出规范](../kql/poc-parser-fix-20261117/value-checks/MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)。**未改 Mashup Candidate / 正式 KQL Schema，未动 PROD。**
+
 ## 2026-11-20 15:47–15:51（UTC+8）— Aggregation POC 新数据功能回归 Passed
 - 用户通过本地 `eventhouse-remote` MCP 只读执行 09 Activity Gate → 06/07/08；真实 PatchUtc `2026-11-20T07:24:24.1258875Z`。8/8 Raw 类型在 Patch 后有 Envelope；Aggregation Raw **2 Envelope / 7 行**、Parsed **7 行**。
 - QueryExecution Duration 三列 Raw/Parsed 均 **7/7 非空**；DataProcessing Duration 三列均 **1/7 非空**（Raw 原本有 6/7 空值）。组合 Key **2/2** 命中；六字段的非空值均匹配，**0 mismatch**。两条以上记录共享组合 Key，**并非 7/7 逐行配对**。

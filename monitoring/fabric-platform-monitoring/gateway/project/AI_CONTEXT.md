@@ -1,6 +1,6 @@
 # AI / 技术交接说明
 
-> 更新时间：2026-11-20 15:51（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
+> 更新时间：2026-11-20 16:44（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
 
 ## 固定背景
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点（以 STATUS 为准）：** Streaming 已 32/32 新数据双指标 Passed；Aggregation 2026-11-20 15:47–15:51 Follow-up **Passed**（Raw 7 行/Parsed 7 行、2/2 组合 Key 匹配、六项非空指标无数值差异；DataProcessing 仅 1/7 原本有值属正常）。两项 Candidate 已同步 fork 正式 KQL Schema，**不是又执行 Eventhouse DDL**。Mashup 仍旧版，需先按 [本地 MCP Mashup Precheck](kql/poc-parser-fix-20261117/value-checks/MASHUP_PRECHECK_AI_PROMPT.md) 做六项额外数值验证，重点 `TotalBytes`。严禁自动部署/回滚，PROD 未改。证据见 [2026-11-20](evidence/2026-11-20/README.md)。
+**当前交接点（以 STATUS 为准）：** Streaming（32/32）与 Aggregation（7 条新行、2/2 Key）已 POC 功能性通过并同步 fork 正式 KQL Schema。Mashup 尚未部署，2026-11-20 只读 Precheck **Blocked**：TotalBytes 243/243、TotalRows 34/34 为 JSON 数组文本直接转标量失败，MaxIO 127/127 是小数文本直接转 long 失败；这三列旧 Parsed 同样全 null，并非新部署回归。单元素/多元素数组需要**先确认业务含义**，不能擅自 sum/first/max；`long` 目标类型与 MaxIO 小数冲突需决策。下一步让本地 MCP 执行 [数组/数值语义只读 Follow-up](kql/poc-parser-fix-20261117/value-checks/MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)，只返回脱敏报告；**禁止 Mashup Function DDL/Schema 变更**。详见 [独立评审](evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md)。

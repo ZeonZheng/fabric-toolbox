@@ -61,3 +61,9 @@ Microsoft 参考：[Update Policy](https://learn.microsoft.com/en-us/kusto/manag
 - Aggregation 2026-11-20 15:47–15:51 Follow-up 已通过：Raw 2 Envelope / 7 行、Parsed 7 行；六列 Raw/Parsed 非空计数相同，复合 Key 2/2 命中、非空值 0 mismatch。DataProcessing 三项仅 1/7 有值是 Raw 自身空值，属于预期。现场 Body 与 Candidate 一致、Policy 正常。**不是 Exactly-once 或 7/7 逐行匹配保证**。
 - 已将该已验证 Function 同步 fork 正式 `DatabaseSchema.kql`，与早先 Streaming 同步一起保留；旧版源 [2026-11-17 baseline](../../evidence/2026-11-17/DatabaseSchema.source.kql)。
 - Mashup 本轮**未运行任何 DDL**，先让本地 MCP 按 [Mashup Precheck Prompt](value-checks/MASHUP_PRECHECK_AI_PROMPT.md) 运行 [六项额外字段检查](value-checks/3-mashup-additional-metrics.kql)，根据结果再决定单函数手动修复。
+
+
+## Mashup Blocked（2026-11-20 Precheck）
+
+- 本轮只读证实 `TotalBytes` 243/243、`TotalRows` 34/34 的数组文本及 `MaxIODataBytesPerSecond` 127/127 的小数文本在现行 Candidate 中均转换为 null。**原 Parsed 也已有同样缺陷，不是已部署 Candidate 的回归。**
+- 两个数组的多元素语义未知；`MaxIO` 目标表是 long 但原始有小数。保留原 Candidate **仅作缺陷复现/审计，不得执行**，也不改 fork 正式 KQL Schema。详细见 [独立评审](../../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md) 与 [只读诊断](value-checks/MASHUP_SHAPE_README.md)。

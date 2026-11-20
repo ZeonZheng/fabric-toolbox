@@ -36,3 +36,10 @@
 - [3-mashup-additional-metrics.kql](3-mashup-additional-metrics.kql)：6 个 Raw 数值字段的转换丢失、long 精度、Raw 本来为空的处理。**尚未在用户 Eventhouse 实测**，不得声称通过。
 - [MASHUP_PRECHECK_AI_PROMPT.md](MASHUP_PRECHECK_AI_PROMPT.md)：供本地 Eventhouse Remote MCP 的完整执行说明（仓库/分支/URL/中文 Markdown 输出合同）。
 - **阻断原则：** 在 `TotalBytes` 等字段确认可安全转换、旧版现场 Function/Policy 未漂移之前，不运行 Mashup Candidate，也不更新正式 KQL Schema。
+
+
+## 2026-11-20：Mashup Precheck Blocked（已执行）
+
+- 已运行 [3-mashup-additional-metrics.kql](3-mashup-additional-metrics.kql)，三项转换失败：TotalBytes 243/243、TotalRows 34/34、MaxIODataBytesPerSecond 127/127。报告在 [2026-11-20](../../../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md)。此原查询**已成功执行**，保留以便复现失败基线。
+- **当前下一任务：** [Mashup 数组/小数只读诊断](MASHUP_SHAPE_README.md) 与 [本地 MCP 完整 Prompt](MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)。这三份**新查询未在 KQL 引擎实测**，不得把写入仓库当作完成验证。
+- 不修改 `candidates/3-parse_MashupEvaluationReport.kql` DDL；`MaxIO` 目标 long 类型、TotalBytes/TotalRows 多元素语义未经确认，不能贸然部署或更改 Schema。
