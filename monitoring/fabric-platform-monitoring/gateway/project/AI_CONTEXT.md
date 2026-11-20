@@ -1,6 +1,6 @@
 # AI / 技术交接说明
 
-> 更新时间：2026-11-17（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
+> 更新时间：2026-11-20（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
 
 ## 固定背景
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点：** Dry-run 3/3、Schema 39/39、Value 数值指标 13/13、DataSource 内容等价 235/235 全部通过。下一步让本地 AI 通过已连接的 Eventhouse Remote MCP 执行 [只读 Preflight](kql/poc-parser-fix-20261117/mcp-handoff/README.md)。在人工审核和现场状态确认前不自动部署。
+**当前交接点：** 2026-11-20 本地 MCP Preflight 4/4 已通过，3/3 live Function SHA256 精确匹配，3/3 Policy 合格；[报告/评审](evidence/2026-11-20/README.md)。用户应**亲自在 POC UI 核实环境**后，按 [Streaming 单函数受控 Runbook](kql/poc-parser-fix-20261117/controlled-rollout/README.md) 操作；不可自动通过 MCP 执行 DDL。新增 Mashup TotalBytes 全 null/Streaming Raw-only 三字段缺失需跟踪。

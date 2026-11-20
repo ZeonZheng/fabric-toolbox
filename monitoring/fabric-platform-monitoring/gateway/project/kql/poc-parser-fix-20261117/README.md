@@ -37,3 +37,12 @@
 Microsoft 参考：[Update Policy](https://learn.microsoft.com/en-us/kusto/management/update-policy)。
 
 **唯一最新进度：[STATUS.md](../../STATUS.md)**。避免在脚本说明里重复维护项目当前阶段。
+
+
+## 2026-11-20：MCP Preflight + 受控修复交接
+
+- [Preflight 评审与原始脱敏报告](../../evidence/2026-11-20/README.md)：4/4 通过、3/3 Function SHA256 一致，允许进入人工 Review，**不授权自动部署**。
+- [受控 Streaming 首轮 Runbook](controlled-rollout/README.md)：POC UI 确认、单 Function DDL、部署后只读新记录/失败监测、回滚。
+- [Mashup 新发现补充只读检查](value-checks/3-mashup-additional-metrics.kql)：`TotalBytes` 等此前未全部覆盖指标，**尚未执行**。
+
+**实际运行的 POC Functions 仍是旧版；历史 null 未修复。** 不要并行执行三个 Candidate，PROD 不受本轮变更影响。

@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-20 10:36–10:47（UTC+8）— Eventhouse MCP Preflight 通过，进入 POC Patch 人工评审
+- 本地 AI 通过 `eventhouse-remote.executeQuery` 只读执行 4/4 Preflight；三个目标 Function Body 与 2026-11-17 基线 **3/3 SHA256 精确一致**；3/3 Update Policies 均 Enabled/Transactional/Source Raw；Raw+Parsed 6/6 有数据；最近 2 小时 `0 observed` ingestion failures。**没有 Eventhouse 写操作**。
+- 报告额外发现：Aggregation 6 列/Streaming 2 列新数据仍全 null；Mashup `TotalBytes` 2797/2797 null，Raw 存在该字段；Streaming 有 3 个 Raw-only 字段在目标 Parsed schema 中缺失。
+- 报告对 `parse_QueryStartReport_csv` Folder 有内部矛盾，登记 GW-008，不影响本轮三个目标 Parser 的 Body 比对。
+- 已归档 [脱敏报告](../evidence/2026-11-20/README.md) 和 [独立评审](../evidence/2026-11-20/PRE_DEPLOYMENT_REVIEW.md)，准备 [单个 Streaming Function 的受控 Runbook](../kql/poc-parser-fix-20261117/controlled-rollout/README.md) 与新数据/故障只读检查；**尚未执行任何 DDL**。
+- 下一阶段仅建议单函数 POC 手动变更（用户确认后），并为 Mashup 增加 `TotalBytes` 等指标的补充只读验证。PROD 暂不启动。
+
 ## 2026-11-17 17:11（UTC+8）— DataSource 只读等价验证通过
 - 用户执行了 `2-datasource-compatibility.kql`，导出 `export (12).csv`，已归档为 `DataSourceCheck-LegacyVsCandidate.csv`。Aggregation 96/96、Streaming 139/139，两类共 235 条 Raw 的 Legacy / Candidate DataSource 输出完全一致（`DifferentSerialized=0`）；两者动态类型集合均为 `array` 和 `string`。
 - Mashup 103 条 Raw 的 `DataSource` 为 string，实际 JSON 中 `DataSourceKinds`、`DataSourcePaths` Key 均 0/103，纳入 GW-005 设计风险；**不在本轮最小 Parser 修复中强行生成字段**。
