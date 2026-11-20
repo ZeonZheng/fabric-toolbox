@@ -1,4 +1,5 @@
-// POC APPLIED 2026-11-20 ~15:24 UTC+8; live Body matches this candidate, but post-deploy metric recovery INCONCLUSIVE (0 new rows).\n// DO NOT RE-RUN. Retain rollback. Transactional Update Policy risk remains until new records are verified.
+// POC VALIDATED 2026-11-20 15:47–15:51 UTC+8. BodyMatchesCandidate=true; 7 Raw / 7 Parsed, 2/2 joined keys, 6 present metrics match, 0 mismatches.
+// DO NOT RE-RUN in validated POC. Historical nulls and transactional Update Policy risks remain; PROD is out of scope.
 .create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from QueryExecutionAggregationReport") parse_QueryExecutionAggregationReport() {
 ['GatewayReports-Raw']
 | where logType == "QueryExecutionAggregationReport"

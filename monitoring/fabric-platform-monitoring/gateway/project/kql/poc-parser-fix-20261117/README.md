@@ -1,6 +1,6 @@
 # POC Parser 修复工作区（2026-11-17）
 
-> **注意：目前所有 Patch 仅存在于 GitHub，未执行 Eventhouse Function DDL。** 本目录只用于单节点 POC 的验证与修复候选，不允许直接部署 PROD。
+> **2026-11-20 更新：Streaming 和 Aggregation 均已在 POC 手工修复并通过新数据功能性回归；仅 Mashup 候选尚未部署。** 本目录为 POC 验证资产，不允许直接部署 PROD。
 
 ## 范围与安全边界
 
@@ -16,7 +16,7 @@
 | [dryrun/](dryrun/) | **否（只读）** | `let Candidate = () {...}`，用非空计数初步验证 |
 | [schema/](schema/README.md) | **否（只读）** | **已通过 3/3，39/39 列匹配** |
 | [value-checks/](value-checks/README.md) | **否（只读）** | 数值/单位检查已通过；[DataSource 内容等价性查询](value-checks/DATASOURCE_README.md) 已通过（235/235） |
-| [candidates/](candidates/) | **是（变更 Function）** | Streaming **已部署通过，勿重复运行**；Aggregation **已手工部署、待新数据验证**；Mashup 待受控部署 |
+| [candidates/](candidates/) | **是（变更 Function）** | Streaming **已部署通过，勿重复运行**；Aggregation **已部署且 Passed**；Mashup 需额外数值只读 Precheck，尚未部署 |
 | [rollback/](rollback/) | **是（回滚 Function）** | 以实际部署导出的旧 Body 恢复，必须确认现场版本后使用 |
 
 备份：[15 个实际 Function Body](../../evidence/2026-11-17/DeployedFunctions.full.export.csv) · [142 行 Schema](../../evidence/2026-11-17/DeployedTableSchema.sanitized.csv) · [字段审计](../../docs/SCHEMA_FIELD_MAPPING_AUDIT.md)。
@@ -54,3 +54,10 @@ Microsoft 参考：[Update Policy](https://learn.microsoft.com/en-us/kusto/manag
 - 旧 Parsed 2675 行仍 null，历史不自动修复；功能验证窗口约 25 分钟，不等于长时间稳定性。
 - 已将这一个已通过 POC 验证的 Function 同步到 fork 正式 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，避免下次部署从旧源码覆盖修复。保留原版 `evidence/2026-11-17/DatabaseSchema.source.kql`。
 - [完整证据](../../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md) · [下一个 Aggregation Runbook](controlled-rollout/AGGREGATION_RUNBOOK.md)。
+
+
+## 2026-11-20 Aggregation 功能性回归与 Mashup 门槛
+
+- Aggregation 2026-11-20 15:47–15:51 Follow-up 已通过：Raw 2 Envelope / 7 行、Parsed 7 行；六列 Raw/Parsed 非空计数相同，复合 Key 2/2 命中、非空值 0 mismatch。DataProcessing 三项仅 1/7 有值是 Raw 自身空值，属于预期。现场 Body 与 Candidate 一致、Policy 正常。**不是 Exactly-once 或 7/7 逐行匹配保证**。
+- 已将该已验证 Function 同步 fork 正式 `DatabaseSchema.kql`，与早先 Streaming 同步一起保留；旧版源 [2026-11-17 baseline](../../evidence/2026-11-17/DatabaseSchema.source.kql)。
+- Mashup 本轮**未运行任何 DDL**，先让本地 MCP 按 [Mashup Precheck Prompt](value-checks/MASHUP_PRECHECK_AI_PROMPT.md) 运行 [六项额外字段检查](value-checks/3-mashup-additional-metrics.kql)，根据结果再决定单函数手动修复。

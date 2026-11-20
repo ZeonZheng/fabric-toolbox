@@ -1,7 +1,7 @@
 # Gateway Monitoring｜与官方实现的差异记录
 
 > **对照基线：** [Microsoft Fabric Toolbox（Gateway PowerShell）](https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring/gateway) 和 [Jumpstart Gateway Setup Notebook v0.2.3](https://github.com/ecotte/fabric-platform-monitoring/blob/v0.2.3/gateway-monitoring/src/fabric-platform-monitoring/setup/Gateway%20Monitoring%20Setup.Notebook/notebook-content.py)。  
-> **范围：** 当前 fork 的 `monitoring/fabric-platform-monitoring/gateway/`，加上本次 **2026-11-20 已通过 POC 验证的唯一 KQL Schema 变更**：`monitoring/fabric-platform-monitoring/src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`。其他 Fabric Report/Semantic Model、Capacity、Inventory 等未改动。
+> **范围：** 当前 fork 的 `monitoring/fabric-platform-monitoring/gateway/`，加上本次 **2026-11-20 已通过 POC 验证的两项已验证的 KQL Schema Function 变更**：`monitoring/fabric-platform-monitoring/src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`。其他 Fabric Report/Semantic Model、Capacity、Inventory 等未改动。
 
 [返回总览](../README.md) · [POC 状态](POC_STATUS.md) · [复现步骤](DEPLOYMENT_RUNBOOK.md)
 
@@ -9,7 +9,9 @@
 
 | 文件 / 配置 | 官方原始行为 | 本次记录或修复 | 验证状态 |
 | --- | --- | --- | --- |
-| **src/Gateway/.../DatabaseSchema.kql · parse_QueryStreamingReport** | 旧版 `bag_unpack` 按 `SpoolingDiskReadingDuration_ms_` / `StreamingDuration_ms_` 读取错误 Raw Key，导致 Parsed 全 null | **仅替换此一个 Function** 为已在 POC 验证的 `record["...(ms)"]` 显式映射；目标列名、顺序、类型不变 | ✅ 2026-11-20 POC 新 Parsed 32/32 双指标有值、Raw/Parsed 32/32 数值相等、0 mismatch；**仅 fork 源码同步，并非再次部署** |\n| **Gateway Monitoring Setup.ipynb** | `fab` CLI 查询 Item、Topology、Connection | 上传的本地版本改用 Fabric REST、显式 HTTP/JSON 检查、校验 CustomEndpoint；fork 再做兼容性修复 | 🟡 旧适配路线用于 POC；**最终提交版待重测** |
+| **src/Gateway/.../DatabaseSchema.kql · parse_QueryStreamingReport** | 旧版 `bag_unpack` 按 `SpoolingDiskReadingDuration_ms_` / `StreamingDuration_ms_` 读取错误 Raw Key，导致 Parsed 全 null | **仅替换此一个 Function** 为已在 POC 验证的 `record["...(ms)"]` 显式映射；目标列名、顺序、类型不变 | ✅ 2026-11-20 POC 新 Parsed 32/32 双指标有值、Raw/Parsed 32/32 数值相等、0 mismatch；**仅 fork 源码同步，并非再次部署** |
+| **src/Gateway/.../DatabaseSchema.kql · parse_QueryExecutionAggregationReport** | 旧版 Parser 根据标准化 `_ms_` 列读取，但实际 Raw Key 为 `...(ms)`，六个 Duration 均错误为 null | **仅替换此一个 Function** 为显式 `record["...(ms)"]` 提取，保留原列名、顺序、类型 | ✅ 2026-11-20 POC 新 Raw/Parsed 各 7 行，2/2 唯一 Key 对照，六项非空值匹配且 0 mismatch；**GitHub 同步不构成再次部署** |
+| **Gateway Monitoring Setup.ipynb** | `fab` CLI 查询 Item、Topology、Connection | 上传的本地版本改用 Fabric REST、显式 HTTP/JSON 检查、校验 CustomEndpoint；fork 再做兼容性修复 | 🟡 旧适配路线用于 POC；**最终提交版待重测** |
 | **Jumpstart Installer.ipynb** | 通过 `fabric_jumpstart.install(...)` 安装 | 保留本地安装/更新示例，清理历史执行输出，`update_existing=True` 默认注释 | 🟡 仅作为施工记录，不能视为安装成功证明 |
 | **Run-GatewayHeartbeat.ps1** | 生成 `$msg`，但发送 `$body` | **只改一行：** `$body` → `$msg` | ✅ HTTP 201 / KQL 验证 |
 | **Setup-UpdateConfiguration.ps1** | 交互设置路径、Gateway ID、加密 Secret | **源文件未改动**；只使用正确粘贴方式和运行时配置 | ✅ |
@@ -93,7 +95,7 @@ Add-MsgEventHub -msg $msg -connectionType "Heartbeat" -config $config
 
 - 没有把未完成的 Tail Collector 当作已经实施的代码；目前在 POC 上实际运行的是**原始 Move Uploader**，尚未证明长期稳定性。
 - 没有把经讨论的 Kafka、Fluent Bit、Vector、C# Worker 等方案描述为已经选型或部署。
-- **2026-11-20 例外：** 已将 POC 验证通过的 `parse_QueryStreamingReport` 同步至 fork `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，对应[旧版完整快照](../evidence/2026-11-17/DatabaseSchema.source.kql)和[验收证据](../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)。**没有**改动 Aggregation、Mashup 或其它 KQL Functions/Policies，也未触碰 Report/Capacity/Inventory。
+- **2026-11-20 例外：** 已将 POC 验证通过的 `parse_QueryStreamingReport`、`parse_QueryExecutionAggregationReport` 同步至 fork `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`，对应[旧版完整快照](../evidence/2026-11-17/DatabaseSchema.source.kql)和[验收证据](../evidence/2026-11-20/STREAMING_FOLLOWUP_REVIEW.md)。**没有**改动 Mashup 或其它 KQL Functions/Policies，也未触碰 Report/Capacity/Inventory。
 - 未来 Jumpstart `update_existing=True` 可能覆盖 Fabric 托管 Items；应先评估差异和备份，再决定是否执行。
 
 **2026-11-13 新发现（仅部署时观察与记录，未改源码）：** 原 Uploader 的 History 合并发生在**上传之后**，按文件名前缀、当天创建、低于 100 MiB 选择本地归档文件；与 Gateway 自身的 100 MiB / 10 个源日志轮转独立。用户计划 POC 连续观察后，以独立 Staging 和事件时间 cutoff 测试 PROD 首次 Backfill，不直接上传所有生产历史日志。详见 [架构运维](ARCHITECTURE_OPERATIONS.md) 与 [状态记录](POC_STATUS.md)。

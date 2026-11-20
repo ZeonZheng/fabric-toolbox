@@ -2,6 +2,14 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-20 15:47–15:51（UTC+8）— Aggregation POC 新数据功能回归 Passed
+- 用户通过本地 `eventhouse-remote` MCP 只读执行 09 Activity Gate → 06/07/08；真实 PatchUtc `2026-11-20T07:24:24.1258875Z`。8/8 Raw 类型在 Patch 后有 Envelope；Aggregation Raw **2 Envelope / 7 行**、Parsed **7 行**。
+- QueryExecution Duration 三列 Raw/Parsed 均 **7/7 非空**；DataProcessing Duration 三列均 **1/7 非空**（Raw 原本有 6/7 空值）。组合 Key **2/2** 命中；六字段的非空值均匹配，**0 mismatch**。两条以上记录共享组合 Key，**并非 7/7 逐行配对**。
+- Live Function Body 与 Candidate 一致，Update Policy Enabled/Transactional，Post-Patch `0 observed` ingestion failures。首次 Inconclusive 被真实新数据解决；**POC 字段功能回归 Passed，长期可靠性未验收**。
+- 归档 [原始脱敏 Follow-up](../evidence/2026-11-20/gateway-aggregation-followup-20261120-1547-SGT.sanitized.md) 与 [独立评审](../evidence/2026-11-20/AGGREGATION_FOLLOWUP_REVIEW.md)。此前 Query 07 字段交叉引用 Bug 指控已被正式更正。
+- **仅已验证 Aggregation Function** 已同步至 fork 的 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`；Streaming 修复保留，Mashup 等其它 Parser、PROD、Uploader/Policy 均未改。
+- 下一项为 Mashup **额外六项数值转换只读 Precheck**，特别关注旧 Parsed `TotalBytes` 全 null。已准备完整本地 MCP AI Prompt；通过前不得部署。
+
 ## 2026-11-20 15:24–15:29（UTC+8）— Aggregation 已部署，首次回归 Inconclusive
 - 用户在 POC 手工执行 `parse_QueryExecutionAggregationReport` Candidate；真实 Patch UTC `2026-11-20T07:24:24.1258875Z`。本地 MCP 15:25–15:29 验证：Body 逐字节匹配 Candidate，SHA256 `626cb510…c7f21`，Policy Enabled/Transactional；Patch 后 Raw=0、Parsed=0、Policy failures 0 observed。**因无新记录，六个 Duration 尚不能判定修复成功。**
 - 已归档 [原报告](../evidence/2026-11-20/gateway-aggregation-postcheck-20261120-1525-SGT.sanitized.md) 和 [独立评审](../evidence/2026-11-20/AGGREGATION_POSTCHECK_REVIEW.md)。暂不回滚，也**不修改 Mashup / PROD**。

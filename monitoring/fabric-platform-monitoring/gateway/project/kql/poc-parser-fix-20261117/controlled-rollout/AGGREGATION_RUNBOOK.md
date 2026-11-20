@@ -1,6 +1,6 @@
 # POC Aggregation Parser｜第二轮单函数修复指南
 
-> **2026-11-20 15:29 状态更新：Aggregation Candidate 已由用户手工在 POC 部署，**Body 匹配，但因没有新 Aggregation 数据，回归为 **Inconclusive**。**不要重复运行下面的 Step 2**。当前执行 [MCP Follow-up Prompt](AGGREGATION_FOLLOWUP_AI_PROMPT.md)；后文手动步骤仅保留为历史操作说明。
+> **2026-11-20 15:51 状态更新：Aggregation Candidate 已由用户手工部署，并通过新数据功能回归**（Raw/Parsed 7/7、2/2 唯一 Key、六项有值字段 0 mismatch）。**不要重新执行下面的 Step 2**。本页保留历史操作说明，结果见 [Follow-up 独立评审](../../../evidence/2026-11-20/AGGREGATION_FOLLOWUP_REVIEW.md)。
 
 ## 你手动执行（三步）
 

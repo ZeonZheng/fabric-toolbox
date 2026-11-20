@@ -4,7 +4,7 @@
 
 | ID | 优先级 | 状态 | 首次记录 | 最后复核 | 问题 / 风险 | 下一动作 | 证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **GW-001** | P1 | **部分通过：Streaming Passed，Aggregation Inconclusive** | 2026-11-17 | 2026-11-20 | Streaming 修复新行 32/32 通过；Aggregation 2026-11-20 15:24 手工部署，现场 Body 与 Candidate 一致，但 15:29 Postcheck 新 Raw/Parsed 0/0，六 Duration 尚不能验收；Mashup 未部署 | 用 MCP 先查 Aggregation 新事件，再按实际 PatchUtc 重跑 06/07/08；无样本不重部署、不判成功、暂不触碰 Mashup | [Aggregation Review](../evidence/2026-11-20/AGGREGATION_POSTCHECK_REVIEW.md) · [MCP Follow-up](../kql/poc-parser-fix-20261117/controlled-rollout/AGGREGATION_FOLLOWUP_AI_PROMPT.md) |
+| **GW-001** | P1 | **部分通过：Streaming + Aggregation POC Passed，Mashup 未部署** | 2026-11-17 | 2026-11-20 | Streaming 32/32 新行双字段匹配；Aggregation 7 条 Raw/Parsed 新行、6 列非空数一致，2/2 唯一组合 Key 对照、六项非空值匹配、0 mismatch；Mashup `TotalBytes` 旧表全 null，尚未修复 | 先交本地 MCP 运行 Mashup 6 项只读转换/语义核查，评审合格后才考虑手动部署第三个 Parser；历史回填与持续可靠性另列 | [Aggregation Follow-up](../evidence/2026-11-20/AGGREGATION_FOLLOWUP_REVIEW.md) · [Mashup Precheck](../kql/poc-parser-fix-20261117/value-checks/MASHUP_PRECHECK_AI_PROMPT.md) |
 | **GW-002** | P1 | 待验证 | 2026-11-12 | 2026-11-17 | 活动日志 Move、部分 Batch 失败/重试、重复/遗漏风险 | 文件/行数/批次对账与故障测试 | [文件生命周期](../docs/ARCHITECTURE_OPERATIONS.md) |
 | **GW-003** | P1 | 待决策 | 2026-11-17 | 2026-11-17 | Raw 仅保留 1 天，回放及长期审计受限 | 评估 Retention / Archive 成本与恢复策略 | [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
 | **GW-004** | P2 | 设计中 | 2026-11-17 | 2026-11-17 | PROD 需 Upload Manifest 追踪 File、Hash、Rows、Batch Status | 确定快照、幂等与持久化设计 | [设计草案](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |

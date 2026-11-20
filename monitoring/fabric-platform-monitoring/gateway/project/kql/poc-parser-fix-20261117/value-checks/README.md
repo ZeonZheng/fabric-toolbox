@@ -29,3 +29,10 @@
 **重要：** 本查询属于无状态聚合检查，不确认上传全量性、不修复已存储的 null，也不证明旧 Parser 的所有其他字段保持不变。`SampleRaw` 和 `SampleCandidate` 是独立抽样，不能将其视作配对结果。数值结果仅为转换合理性验证，仍需在变更前人工复核。
 
 证据归档：[2026-11-17](../../../evidence/2026-11-17/README.md) · 当前状态：[STATUS](../../../STATUS.md)。
+
+
+## Mashup 部署前检查（2026-11-20）
+
+- [3-mashup-additional-metrics.kql](3-mashup-additional-metrics.kql)：6 个 Raw 数值字段的转换丢失、long 精度、Raw 本来为空的处理。**尚未在用户 Eventhouse 实测**，不得声称通过。
+- [MASHUP_PRECHECK_AI_PROMPT.md](MASHUP_PRECHECK_AI_PROMPT.md)：供本地 Eventhouse Remote MCP 的完整执行说明（仓库/分支/URL/中文 Markdown 输出合同）。
+- **阻断原则：** 在 `TotalBytes` 等字段确认可安全转换、旧版现场 Function/Policy 未漂移之前，不运行 Mashup Candidate，也不更新正式 KQL Schema。
