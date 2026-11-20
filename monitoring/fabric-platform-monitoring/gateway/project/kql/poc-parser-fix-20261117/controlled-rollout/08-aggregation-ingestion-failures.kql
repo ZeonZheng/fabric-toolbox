@@ -1,0 +1,5 @@
+// 只读。把 2099 时间替换为实际 PatchUtc；不输出敏感 FailureDetails。
+.show ingestion failures
+| where FailedOn >= datetime(2099-01-01T00:00:00Z)
+| where OriginatesFromUpdatePolicy == true
+| summarize FailureCount=count(), FirstUtc=min(FailedOn), LastUtc=max(FailedOn) by Table, FailureKind

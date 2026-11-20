@@ -1,0 +1,29 @@
+// 只读：Raw envelope logDate 与 Parsed ingestion_time() 各自按真实 Patch UTC 筛选；行数相等不证明 exactly-once。
+let PatchUtc = datetime(2099-01-01T00:00:00Z); // 请替换为实际运行完成后记录的 UTC
+let Raw = ['GatewayReports-Raw']
+| where logType == "QueryExecutionAggregationReport" and logDate >= PatchUtc
+| mv-expand r=log
+| extend AverageQueryExecutionDuration_ms_=toreal(r["AverageQueryExecutionDuration(ms)"]),
+    MaxQueryExecutionDuration_ms_=tolong(r["MaxQueryExecutionDuration(ms)"]),
+    MinQueryExecutionDuration_ms_=tolong(r["MinQueryExecutionDuration(ms)"]),
+    AverageDataProcessingDuration_ms_=toreal(r["AverageDataProcessingDuration(ms)"]),
+    MaxDataProcessingDuration_ms_=tolong(r["MaxDataProcessingDuration(ms)"]),
+    MinDataProcessingDuration_ms_=tolong(r["MinDataProcessingDuration(ms)"])
+| summarize Rows=count(), AverageQueryExecutionDuration_ms__Present=countif(isnotnull(AverageQueryExecutionDuration_ms_)),
+    MaxQueryExecutionDuration_ms__Present=countif(isnotnull(MaxQueryExecutionDuration_ms_)),
+    MinQueryExecutionDuration_ms__Present=countif(isnotnull(MinQueryExecutionDuration_ms_)),
+    AverageDataProcessingDuration_ms__Present=countif(isnotnull(AverageDataProcessingDuration_ms_)),
+    MaxDataProcessingDuration_ms__Present=countif(isnotnull(MaxDataProcessingDuration_ms_)),
+    MinDataProcessingDuration_ms__Present=countif(isnotnull(MinDataProcessingDuration_ms_)), LatestUTC=max(logDate)
+| extend Layer="Raw", TimeKind="logDate";
+let Parsed = QueryExecutionAggregationReport
+| where ingestion_time() >= PatchUtc
+| summarize Rows=count(), AverageQueryExecutionDuration_ms__Present=countif(isnotnull(AverageQueryExecutionDuration_ms_)),
+    MaxQueryExecutionDuration_ms__Present=countif(isnotnull(MaxQueryExecutionDuration_ms_)),
+    MinQueryExecutionDuration_ms__Present=countif(isnotnull(MinQueryExecutionDuration_ms_)),
+    AverageDataProcessingDuration_ms__Present=countif(isnotnull(AverageDataProcessingDuration_ms_)),
+    MaxDataProcessingDuration_ms__Present=countif(isnotnull(MaxDataProcessingDuration_ms_)),
+    MinDataProcessingDuration_ms__Present=countif(isnotnull(MinDataProcessingDuration_ms_)), LatestUTC=max(ingestion_time())
+| extend Layer="Parsed", TimeKind="ingestion_time()";
+union Raw, Parsed
+| project Layer, Rows, AverageQueryExecutionDuration_ms__Present, MaxQueryExecutionDuration_ms__Present, MinQueryExecutionDuration_ms__Present, AverageDataProcessingDuration_ms__Present, MaxDataProcessingDuration_ms__Present, MinDataProcessingDuration_ms__Present, LatestUTC, TimeKind

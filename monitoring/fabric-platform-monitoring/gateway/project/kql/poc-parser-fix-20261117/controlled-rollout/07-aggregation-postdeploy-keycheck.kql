@@ -1,0 +1,35 @@
+// 只读：按组合业务 Key 做样本对照，若存在重复 Key 会选择最新记录；不是完整性/Exactly-once 证明。无 ID 明文输出。
+let PatchUtc = datetime(2099-01-01T00:00:00Z); // 请替换为实际运行完成后记录的 UTC
+let Raw = ['GatewayReports-Raw']
+| where logType == "QueryExecutionAggregationReport" and logDate >= PatchUtc
+| mv-expand r=log
+| extend GatewayObjectId=toguid(tostring(r.GatewayObjectId)), AggregationStartTimeUTC=todatetime(r.AggregationStartTimeUTC), AggregationEndTimeUTC=todatetime(r.AggregationEndTimeUTC), QueryType=tostring(r.QueryType), Success=tostring(r.Success), Count=tolong(r.Count)
+| extend Key=strcat(tostring(GatewayObjectId),'|',tostring(AggregationStartTimeUTC),'|',tostring(AggregationEndTimeUTC),'|',tostring(QueryType),'|',tostring(Success),'|',tostring(Count))
+| project Key, logDate, R_AverageQueryExecutionDuration_ms_=toreal(r["AverageQueryExecutionDuration(ms)"]), R_MaxQueryExecutionDuration_ms_=tolong(r["MaxQueryExecutionDuration(ms)"]), R_MinQueryExecutionDuration_ms_=tolong(r["MinQueryExecutionDuration(ms)"]), R_AverageDataProcessingDuration_ms_=toreal(r["AverageDataProcessingDuration(ms)"]), R_MaxDataProcessingDuration_ms_=tolong(r["MaxDataProcessingDuration(ms)"]), R_MinDataProcessingDuration_ms_=tolong(r["MinDataProcessingDuration(ms)"])
+| summarize arg_max(logDate, *) by Key;
+let Parsed = QueryExecutionAggregationReport
+| where ingestion_time() >= PatchUtc
+| extend Key=strcat(tostring(GatewayObjectId),'|',tostring(AggregationStartTimeUTC),'|',tostring(AggregationEndTimeUTC),'|',tostring(QueryType),'|',tostring(Success),'|',tostring(Count))
+| project Key, LastIngest=ingestion_time(), P_AverageQueryExecutionDuration_ms_=AverageQueryExecutionDuration_ms_, P_MaxQueryExecutionDuration_ms_=MaxQueryExecutionDuration_ms_, P_MinQueryExecutionDuration_ms_=MinQueryExecutionDuration_ms_, P_AverageDataProcessingDuration_ms_=AverageDataProcessingDuration_ms_, P_MaxDataProcessingDuration_ms_=MaxDataProcessingDuration_ms_, P_MinDataProcessingDuration_ms_=MinDataProcessingDuration_ms_
+| summarize arg_max(LastIngest, *) by Key;
+Raw
+| join kind=leftouter (Parsed) on Key
+| summarize UniqueRawKeys=count(), MatchedParsed=countif(isnotnull(LastIngest)),
+    AverageQueryExecutionDuration_ms__RawPresent=countif(isnotnull(R_AverageQueryExecutionDuration_ms_)),
+    AverageQueryExecutionDuration_ms__Matches=countif(isnotnull(R_AverageQueryExecutionDuration_ms_) and isnotnull(P_AverageQueryExecutionDuration_ms_) and (abs(todouble(R_AverageQueryExecutionDuration_ms_)-todouble(P_AverageQueryExecutionDuration_ms_)) <= 0.0001)),
+    AverageQueryExecutionDuration_ms__Mismatches=countif(isnotnull(R_AverageQueryExecutionDuration_ms_) and isnotnull(P_AverageQueryExecutionDuration_ms_) and (abs(todouble(R_AverageQueryExecutionDuration_ms_)-todouble(P_AverageQueryExecutionDuration_ms_)) > 0.0001)),
+    MaxQueryExecutionDuration_ms__RawPresent=countif(isnotnull(R_MaxQueryExecutionDuration_ms_)),
+    MaxQueryExecutionDuration_ms__Matches=countif(isnotnull(R_MaxQueryExecutionDuration_ms_) and isnotnull(P_MaxQueryExecutionDuration_ms_) and (R_MaxQueryExecutionDuration_ms_ == P_MaxQueryExecutionDuration_ms_)),
+    MaxQueryExecutionDuration_ms__Mismatches=countif(isnotnull(R_MaxQueryExecutionDuration_ms_) and isnotnull(P_MaxQueryExecutionDuration_ms_) and (R_MaxQueryExecutionDuration_ms_ != P_MaxQueryExecutionDuration_ms_)),
+    MinQueryExecutionDuration_ms__RawPresent=countif(isnotnull(R_MinQueryExecutionDuration_ms_)),
+    MinQueryExecutionDuration_ms__Matches=countif(isnotnull(R_MinQueryExecutionDuration_ms_) and isnotnull(P_MinQueryExecutionDuration_ms_) and (R_MinQueryExecutionDuration_ms_ == P_MinQueryExecutionDuration_ms_)),
+    MinQueryExecutionDuration_ms__Mismatches=countif(isnotnull(R_MinQueryExecutionDuration_ms_) and isnotnull(P_MinQueryExecutionDuration_ms_) and (R_MinQueryExecutionDuration_ms_ != P_MinQueryExecutionDuration_ms_)),
+    AverageDataProcessingDuration_ms__RawPresent=countif(isnotnull(R_AverageDataProcessingDuration_ms_)),
+    AverageDataProcessingDuration_ms__Matches=countif(isnotnull(R_AverageDataProcessingDuration_ms_) and isnotnull(P_AverageDataProcessingDuration_ms_) and (abs(todouble(R_AverageDataProcessingDuration_ms_)-todouble(P_AverageDataProcessingDuration_ms_)) <= 0.0001)),
+    AverageDataProcessingDuration_ms__Mismatches=countif(isnotnull(R_AverageDataProcessingDuration_ms_) and isnotnull(P_AverageDataProcessingDuration_ms_) and (abs(todouble(R_AverageDataProcessingDuration_ms_)-todouble(P_AverageDataProcessingDuration_ms_)) > 0.0001)),
+    MaxDataProcessingDuration_ms__RawPresent=countif(isnotnull(R_MaxDataProcessingDuration_ms_)),
+    MaxDataProcessingDuration_ms__Matches=countif(isnotnull(R_MaxDataProcessingDuration_ms_) and isnotnull(P_MaxDataProcessingDuration_ms_) and (R_MaxDataProcessingDuration_ms_ == P_MaxDataProcessingDuration_ms_)),
+    MaxDataProcessingDuration_ms__Mismatches=countif(isnotnull(R_MaxDataProcessingDuration_ms_) and isnotnull(P_MaxDataProcessingDuration_ms_) and (R_MaxDataProcessingDuration_ms_ != P_MaxDataProcessingDuration_ms_)),
+    MinDataProcessingDuration_ms__RawPresent=countif(isnotnull(R_MinDataProcessingDuration_ms_)),
+    MinDataProcessingDuration_ms__Matches=countif(isnotnull(R_MinDataProcessingDuration_ms_) and isnotnull(P_MinDataProcessingDuration_ms_) and (R_MinDataProcessingDuration_ms_ == P_MinDataProcessingDuration_ms_)),
+    MinDataProcessingDuration_ms__Mismatches=countif(isnotnull(R_MinDataProcessingDuration_ms_) and isnotnull(P_MinDataProcessingDuration_ms_) and (R_MinDataProcessingDuration_ms_ != P_MinDataProcessingDuration_ms_))
