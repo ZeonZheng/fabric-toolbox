@@ -1,0 +1,22 @@
+// 只读。执行前将下面的时间改为【实际 Patch UTC】，不可保留示例时间。
+// Raw.logDate = envelope 时间；Parsed.StreamingStartTimeUTC = 业务时间，两层 RowCount 不能直接对账。
+let PatchUtc = datetime(2099-01-01T00:00:00Z); // 必须修改，否则结果 0 是 Inconclusive！
+let Raw =
+    ['GatewayReports-Raw']
+    | where logType == "QueryStreamingReport" and logDate >= PatchUtc
+    | mv-expand record=log
+    | extend ExpectedStreaming=tolong(record["StreamingDuration(ms)"]),
+             ExpectedSpooling=tolong(record["SpoolingDiskReadingDuration(ms)"])
+    | summarize Rows=count(), WithStreaming=countif(isnotnull(ExpectedStreaming)),
+        WithSpooling=countif(isnotnull(ExpectedSpooling)), LatestTimeUTC=max(logDate)
+    | extend Layer="Raw", TimeKind="logDate";
+let Parsed =
+    QueryStreamingReport
+    | where StreamingStartTimeUTC >= PatchUtc
+    | summarize Rows=count(), WithStreaming=countif(isnotnull(StreamingDuration_ms_)),
+        WithSpooling=countif(isnotnull(SpoolingDiskReadingDuration_ms_)),
+        LatestTimeUTC=max(StreamingStartTimeUTC)
+    | extend Layer="Parsed", TimeKind="StreamingStartTimeUTC";
+union Raw, Parsed
+| project Layer, Rows, WithStreaming, WithSpooling, LatestTimeUTC, TimeKind
+| order by Layer asc

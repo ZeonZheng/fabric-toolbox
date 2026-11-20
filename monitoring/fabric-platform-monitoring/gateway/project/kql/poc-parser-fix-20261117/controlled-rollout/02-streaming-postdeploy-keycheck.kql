@@ -1,0 +1,27 @@
+// 只读。按 RequestId+QueryTrackingId 抽样关联部署后 Raw 与 Parsed；不要输出真实标识。
+// 时间必须替换为实际 Patch UTC。不同记录可能复用 ID；此结果只是样本一致性，不是 exactly-once。
+let PatchUtc = datetime(2099-01-01T00:00:00Z); // 必须修改
+let Raw =
+    ['GatewayReports-Raw']
+    | where logType == "QueryStreamingReport" and logDate >= PatchUtc
+    | mv-expand r=log
+    | extend Key = strcat(tostring(r.RequestId), "|", tostring(r.QueryTrackingId)),
+             ExpectedStreaming=tolong(r["StreamingDuration(ms)"]),
+             ExpectedSpooling=tolong(r["SpoolingDiskReadingDuration(ms)"])
+    | summarize arg_max(logDate, ExpectedStreaming, ExpectedSpooling) by Key;
+let Parsed =
+    QueryStreamingReport
+    | where StreamingStartTimeUTC >= PatchUtc - 1d
+    | extend Key = strcat(tostring(RequestId), "|", tostring(QueryTrackingId))
+    | summarize arg_max(StreamingStartTimeUTC, StreamingDuration_ms_, SpoolingDiskReadingDuration_ms_) by Key;
+Raw
+| join kind=leftouter (Parsed) on Key
+| summarize
+    UniqueRawKeys=count(),
+    MatchedParsed=countif(isnotnull(StreamingStartTimeUTC)),
+    RawStreamingPresent=countif(isnotnull(ExpectedStreaming)),
+    ParsedStreamingMatches=countif(isnotnull(ExpectedStreaming) and isnotnull(StreamingDuration_ms_) and ExpectedStreaming==StreamingDuration_ms_),
+    RawSpoolingPresent=countif(isnotnull(ExpectedSpooling)),
+    ParsedSpoolingMatches=countif(isnotnull(ExpectedSpooling) and isnotnull(SpoolingDiskReadingDuration_ms_) and ExpectedSpooling==SpoolingDiskReadingDuration_ms_),
+    StreamingMismatches=countif(isnotnull(ExpectedStreaming) and isnotnull(StreamingDuration_ms_) and ExpectedStreaming!=StreamingDuration_ms_),
+    SpoolingMismatches=countif(isnotnull(ExpectedSpooling) and isnotnull(SpoolingDiskReadingDuration_ms_) and ExpectedSpooling!=SpoolingDiskReadingDuration_ms_)

@@ -1,0 +1,21 @@
+// 只读。2026-11-20 Preflight 发现 Parsed.TotalBytes 100% null，故在修改 Mashup Function 之前
+// 检查 Candidate 对 Raw 字段的数值转换可用性和长整型截断。此文件尚未在 Eventhouse 实测。
+['GatewayReports-Raw']
+| where logType == "MashupEvaluationReport"
+| mv-expand record=log
+| extend Fields=dynamic([
+    "TotalBytes", "TotalRows", "AveragePercentProcessorTime",
+    "MaxPercentProcessorTime", "AverageIODataBytesPerSecond", "MaxIODataBytesPerSecond"])
+| mv-expand FieldName=Fields to typeof(string)
+| extend RawText=tostring(record[FieldName]),
+         TargetType=iff(FieldName in ("TotalBytes","MaxIODataBytesPerSecond"),"long","real"),
+         RawNumber=todouble(record[FieldName])
+| extend CandidateNumber=iff(TargetType=="long",todouble(tolong(record[FieldName])),toreal(record[FieldName]))
+| summarize
+    Rows=count(), RawNonEmpty=countif(isnotempty(RawText)),
+    CandidateNonNull=countif(isnotnull(CandidateNumber)),
+    ConversionLoss=countif(isnotempty(RawText) and isnull(CandidateNumber)),
+    ChangedByCast=countif(isnotnull(RawNumber) and isnotnull(CandidateNumber)
+        and abs(RawNumber-CandidateNumber)>0.0001)
+  by FieldName, TargetType
+| order by FieldName asc

@@ -1,0 +1,7 @@
+// 只读管理查询：若失败输出内容含敏感明文，返回脱敏摘要即可。
+// 按实际 PatchUtc 控制时间范围；示例未来时间必须替换。
+.show ingestion failures
+| where FailedOn >= datetime(2099-01-01T00:00:00Z)
+| where OriginatesFromUpdatePolicy == true
+| summarize FailureCount=count(), FirstFailureUtc=min(FailedOn), LastFailureUtc=max(FailedOn) by Table, FailureKind
+| order by FailureCount desc
