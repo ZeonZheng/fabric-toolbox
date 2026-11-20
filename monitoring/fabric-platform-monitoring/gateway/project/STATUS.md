@@ -24,7 +24,7 @@
 
 ## 当前唯一下一步
 
-**由用户亲自在 Eventhouse UI 核实 POC 工作区/数据库身份后，依照 [Streaming 单函数受控修复 Runbook](kql/poc-parser-fix-20261117/controlled-rollout/README.md) 开始第一轮修复。** 只操作 `parse_QueryStreamingReport`，记录准确 UTC 变更时间；运行预先准备的只读新数据验证与 ingestion failure 检查。出现问题使用对应原 Function Body 回滚。**不可由本地 MCP 自动执行 DDL，也不可同批修改三个 Function。**
+**由用户亲自在 Eventhouse UI 核实 POC 工作区/数据库身份后，依照 [Streaming 简明操作步骤（人手动执行写操作）](kql/poc-parser-fix-20261117/controlled-rollout/README.md) 开始第一轮修复；部署后的三份只读查询交给 [本地 MCP 检查 Prompt](kql/poc-parser-fix-20261117/controlled-rollout/POSTCHECK_AI_PROMPT.md)。** 只操作 `parse_QueryStreamingReport`，记录准确 UTC 变更时间；运行预先准备的只读新数据验证与 ingestion failure 检查。出现问题使用对应原 Function Body 回滚。**不可由本地 MCP 自动执行 DDL，也不可同批修改三个 Function。**
 
 后续：Aggregation → Mashup；**Mashup 发布前先运行** [TotalBytes 等额外指标只读检查](kql/poc-parser-fix-20261117/value-checks/3-mashup-additional-metrics.kql)。Streaming Raw-only 3 字段和 Mashup DataSourceKinds/Paths 属于独立 Schema 设计问题，本次不改表。
 
