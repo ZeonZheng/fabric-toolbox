@@ -1,0 +1,26 @@
+// 只读统计；不输出业务标识、DataSource、数组原值。未在用户 POC 引擎实际验证。
+['GatewayReports-Raw']
+| where logType == "MashupEvaluationReport"
+| mv-expand record=log
+| extend BText=tostring(record.TotalBytes), RText=tostring(record.TotalRows),
+         B=parse_json(tostring(record.TotalBytes)), R=parse_json(tostring(record.TotalRows)),
+         IOText=tostring(record.MaxIODataBytesPerSecond),
+         IO=todouble(record.MaxIODataBytesPerSecond)
+| extend BLen=coalesce(array_length(B),0), RLen=coalesce(array_length(R),0)
+| summarize
+    RawRows=count(),
+    TotalBytesPresent=countif(isnotempty(BText)),
+    TotalBytesSingle=countif(BLen==1),
+    TotalBytesMulti=countif(BLen>1),
+    TotalBytesUnparsed=countif(isnotempty(BText) and BLen==0),
+    TotalRowsPresent=countif(isnotempty(RText)),
+    TotalRowsSingle=countif(RLen==1),
+    TotalRowsMulti=countif(RLen>1),
+    TotalRowsUnparsed=countif(isnotempty(RText) and RLen==0),
+    BothArraysPresent=countif(BLen>0 and RLen>0),
+    SameLengthsWhenBoth=countif(BLen>0 and RLen>0 and BLen==RLen),
+    MaxIOPresent=countif(isnotempty(IOText)),
+    MaxIODoubleConvertible=countif(isnotnull(IO)),
+    MaxIOFractional=countif(isnotnull(IO) and abs(IO-floor(IO))>0.000000001),
+    MaxIONegative=countif(isnotnull(IO) and IO<0),
+    MaxIONonFinite=countif(isnotnull(IO) and not(isfinite(IO)))

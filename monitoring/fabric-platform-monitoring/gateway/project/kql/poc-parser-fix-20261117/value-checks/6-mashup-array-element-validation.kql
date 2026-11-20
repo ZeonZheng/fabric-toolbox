@@ -1,0 +1,33 @@
+// 只读：仅聚合 ARRAY ELEMENT 的数值可转换性，不输出数组内容或真实值。
+// 注意：tolong(dynamic) 的行为需要跟踪整数精度；此结果不能决定是 SUM、FIRST、MAX 还是展开。
+let Raw =
+    ['GatewayReports-Raw']
+    | where logType == "MashupEvaluationReport"
+    | mv-expand record=log
+    | extend B=parse_json(tostring(record.TotalBytes)), R=parse_json(tostring(record.TotalRows));
+let ByteElements =
+    Raw
+    | where array_length(B)>0
+    | mv-expand Item=B
+    | extend Number=todouble(Item), AsLong=tolong(Item)
+    | summarize Elements=count(),
+                NumericElements=countif(isnotnull(Number)),
+                LongConvertible=countif(isnotnull(AsLong)),
+                FractionalElements=countif(isnotnull(Number) and abs(Number-floor(Number))>0.000000001),
+                NegativeElements=countif(isnotnull(Number) and Number<0),
+                BeyondDoubleExactInteger=countif(isnotnull(Number) and abs(Number)>9007199254740992)
+    | extend FieldName="TotalBytes";
+let RowElements =
+    Raw
+    | where array_length(R)>0
+    | mv-expand Item=R
+    | extend Number=todouble(Item), AsLong=tolong(Item)
+    | summarize Elements=count(),
+                NumericElements=countif(isnotnull(Number)),
+                LongConvertible=countif(isnotnull(AsLong)),
+                FractionalElements=countif(isnotnull(Number) and abs(Number-floor(Number))>0.000000001),
+                NegativeElements=countif(isnotnull(Number) and Number<0),
+                BeyondDoubleExactInteger=countif(isnotnull(Number) and abs(Number)>9007199254740992)
+    | extend FieldName="TotalRows";
+union ByteElements, RowElements
+| project FieldName, Elements, NumericElements, LongConvertible, FractionalElements, NegativeElements, BeyondDoubleExactInteger
