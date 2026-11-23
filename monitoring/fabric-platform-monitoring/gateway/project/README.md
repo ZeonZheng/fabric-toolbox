@@ -7,7 +7,11 @@
 
 ## 30 秒了解项目
 
-已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC 分别手工应用 Streaming 与 Aggregation 修复；**两项功能回归均通过**：Streaming 32/32 新行双指标与 Raw 匹配，Aggregation 7 条新 Raw/Parsed 行、2/2 组合 Key 的六项有值字段与 Raw 匹配，0 mismatch。两项已同步 fork 正式 KQL Schema。**Mashup 尚未部署且原 Candidate Blocked**：2026-11-23 Shape Follow-up 证明数组元素可以安全转 long（TotalBytes 44/44、TotalRows 35/35），但多元素数组的业务语义仍未知，MaxIO 小数与 long 不兼容。当前版本化 Fabric Report / Semantic Model 未观察到这些字段的**直接引用**；2026-11-23 已由用户确认三个指标对当前目标监控并非必需，按 [ADR-009](tracking/DECISIONS.md) 退出 P1 验收、独立以 [GW-009](tracking/ISSUES.md) 延期追踪。最新本地 MCP 最小 Precheck 对五个 Memory/Time 字段已完成只读验证（四项 33/33、ProcessorTime 36/36，Schema 17/17）；但旧版与整函数重写的**其余 12 列行为兼容性 Gate 尚未完成**，不可部署，详见 [独立评审](evidence/2026-11-23/MASHUP_MINIMAL_PRECHECK_REVIEW.md)。详见 [Nov23 评审](evidence/2026-11-23/MASHUP_SHAPE_FOLLOWUP_REVIEW.md)。上传完整性、长期稳定性与历史数据回填仍未验收。详见 [2026-11-20 两项验证](evidence/2026-11-20/README.md)。
+- **P0 Functional POC 已完成：** Gateway VM → PowerShell Uploader → Eventstream → Eventhouse Raw / Parsed → Semantic Model → Power BI Report 的单节点基础功能已跑通；已观察到 8 类 Gateway Performance Reports、Heartbeat、NodeInfo。**上传端的无丢失、无重复和故障恢复尚未验证。**
+- **P1 Data Correctness 正在收尾：** Streaming Parser 与 Aggregation Parser 已部署 POC 并通过新数据回归（分别 32 条与 7 条样本）；两者已同步 fork 正式 KQL。Mashup P1 最小 Candidate **2026-11-23 已在 POC 手工部署**，现场 Body 与 Candidate 匹配、Policy Enabled/Transactional，但首轮 Postcheck 的新 Raw/Parsed **均为 0**，结论 **INCONCLUSIVE**，未获新记录功能验收。详见 [STATUS](STATUS.md) 与 [Postcheck 独立评审](evidence/2026-11-23/MASHUP_POSTCHECK_1045_REVIEW.md)。
+- **已缩小 P1 范围：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 不是当前必需指标；[ADR-009](tracking/DECISIONS.md) 已将其转为 [GW-009 Deferred](tracking/ISSUES.md)，不声称数据已修复。
+- **P2 Collector Reliability 是下一重点：** 源文件、Batch、Raw、Parsed 的完整性对账，活动文件 Move/轮转、失败重试与恢复、长时间连续运行。P3 PROD Architecture 规划中，P4 Limited PROD Pilot **尚未批准**。
+- **唯一下一步：** 有真实新 Mashup Raw 后才复跑 Postcheck 10/11/12；先用 [Activity Gate 13](kql/poc-parser-fix-20261117/controlled-rollout/13-mashup-postdeploy-activity-gate.kql) 判断。可以并行准备 P2 的可靠性测试。**PROD 尚未获准部署。**
 
 ## 快速导航（以此处为准）
 
