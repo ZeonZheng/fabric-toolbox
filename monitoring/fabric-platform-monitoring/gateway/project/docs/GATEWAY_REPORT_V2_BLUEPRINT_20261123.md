@@ -61,6 +61,14 @@ Report 共 **6 页 / 58 Visual**：
 3. 真实 Live 模型是否和 GitHub 版本相同？DAX/M 参数、模型关系及安全权限有无漂移？
 4. 用户可见的 KPI 是否有时间语义和可解释定义（尤其 Last Status、Running Jobs、Average vs P90）？
 
+## 2026-11-23 来源澄清：不要求用户先提供原始报表文件
+
+- 实际 POC 按 [部署 Runbook](DEPLOYMENT_RUNBOOK.md) 用 `fabric_jumpstart.install("fpm-gateway-monitoring")` 安装 Fabric Items（包括 Report 和 Semantic Model）；网关 VM 的 Uploader **只负责传送日志，不部署 Report**。
+- GitHub fork 版本化 Report 和 Semantic Model 原有资产已可供源码分析：`src/Gateway/Gateway Monitoring.Report/report.json`、`src/Gateway/Gateway Monitoring.SemanticModel/definition/*.tmdl`；另外 `gateway/PBI Report/Gateway Monitor.pbit` 是模板。用户不需要自行创作或导出原版 PBIX 才能开始 V2 设计。
+- 用户截图显示 Service 中的 `A copy of your report with a live connection to data online (.pbix)` 下载选项；**仅当需要比较真实部署版本与 GitHub 的差异、或要在 Desktop 从现有报表直接迭代并导出 Enhanced PBIR 时建议下载**，不是启动设计的硬前置。这个 PBIX 连接原在线模型，不会把 Semantic Model 变成脱机副本。
+- PBIX 可能包含组织内连接信息、Item IDs 及敏感报表定义；优先在受控本地电脑处理，不应无脱敏原样提交到公开 GitHub。必要时让本地辅助工具仅导出可审查的 Report Visual/Field metadata。
+- V2 默认**复用**已部署 Semantic Model，**独立**保存新版 Report，保持原版不受影响。先利用已有源码做布局/字段分析，最后才要求检查实际连接与 Visual 数据结果。
+
 ## 5. 实现格式与 Live Model 边界
 
 - **当前源码的 `Gateway Monitoring.Report/report.json` 是 PBIR-Legacy**；另有 `gateway/PBI Report/Gateway Monitor.pbit`，二者并非同一份可直接编辑源码。旧 `report.json` 不建议直接手工修改以制作新视觉，Microsoft 对外部编程编辑的文档化支持主要面向 [Enhanced PBIR](https://learn.microsoft.com/en-us/power-bi/developer/embedded/projects-enhanced-report-format)；原版文件不能证明 Live Report 与 GitHub 版本一致。
