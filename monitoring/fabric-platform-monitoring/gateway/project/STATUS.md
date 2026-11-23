@@ -84,6 +84,13 @@
 - **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
 - T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
 
+## 2026-11-23 Gateway Monitoring V2 Enhanced PBIR 工程内容候选
+
+- 完成 Python Build 工具及 5 页 **158 个 Enhanced PBIR Visual JSON** 的内容包（本对话已提供可下载 ZIP，尚未提交 GitHub 源码）；利用现有 Semantic Model TMDL 的原字段进行绑定，Card/Slicer/Line/Table/Shape/TextBox 类型已经输出。
+- 静态验证：Python 编译、5 页/158 Visual、JSON 解析、唯一 ID、可见区域、字段白名单、ZIP 完整性 **PASS**。修正 `# Nodes` 并非 Heartbeat 在线节点数，V2 UI 标为 **Nodes with queries**；P90 统一显示秒；没有把 QueryText 绑定到 Visual。
+- **重要边界：** 这仍是带生成器的 PBIR **内容候选**。当前容器 npm Registry DNS 不通，未运行 `powerbi-report-author scaffold/validate`，也未在 Desktop 打开或连接真实 Semantic Model；不表示已有可发布 PBIP。见 [工程交付记录](docs/GATEWAY_REPORT_V2_ENGINEERING_HANDOFF_20261123.md)。
+- **GW-011 下一步**：在授权工作站用微软官方 CLI scaffold + validate，取得结构校验结果，之后在 Desktop 实测 Overview + Dynamic M 参数；无须更改 Gateway Uploader、Eventhouse 或 PROD。
+
 ## 2026-11-23 Gateway Monitoring V2 设计反馈与下一工程关口
 
 - 用户已查看五页交互原型并反馈**“看起来不错”**；据此暂定五页视觉与信息架构为 **V2 初版设计基线**，无需回到重新讨论整体风格。此反馈**不是**对可发布 Power BI Report 的技术验收。
@@ -112,7 +119,7 @@
 
 ## 当前唯一下一步
 
-**V2 报表工程转换（GW-011）+ PROD Pilot Readiness 并行**：先使用官方 CLI/Desktop 有效脚手架创建独立 Enhanced PBIR/PBIP，基于 [Field Contract](docs/GATEWAY_REPORT_V2_FIELD_CONTRACT.md) 实现 Overview、绑定现有 Model 并核对关键 KPI/动态参数；后续逐页实现。上线前同时核对字段必需范围、采集连续性、节点 Backfill、安全/Retention/告警。**不覆盖原版、不直接变更 PROD。**
+**GW-011：验证已生成的 PBIR 候选包**。在本地具备 Microsoft CLI 的授权开发机先运行 Build 工具 `scaffold/validate`（禁止触碰已部署 Report/Model），处理验证错误并生成完整 PBIP；仅在结构验证通过后，再接入 Live Model、Desktop 校验 Overview、再验收其余四页。PROD Pilot 其它安全/采集关口并行规划，**无 PROD 修改**。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 按有限 PROD Pilot Readiness 优先验证重要数据的完整性/新鲜度、业务影响、安全、Retention、节点/Backfill、告警和停止条件；GW-010 重复发送与 GW-004 完整 Manifest 延期。PROD 仍未批准。
