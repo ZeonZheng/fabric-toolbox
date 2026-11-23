@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — Gateway Monitoring Report V2 源码审计与设计立项
+
+- 直接审查 GitHub `Gateway Monitoring.Report/report.json`、同目录 Semantic Model TMDL 和 KQL Functions：**6 页、58 Visual**；现有模型的核心表为 Gateway Node Info / System Counters / Query Execution / Query Connections，对应 4 个 KQL Function。
+- **V2 设计发现：** 原版语义模型没有直接消费 P1 已修复的 Streaming / Aggregation / Mashup 三表，界面改版需要明确是否要新增指标和模型表；现有两项 `Query Avg. Execution ... (ms)` Measures 实际算 P90 秒，需修正名称。版本化源码不一定与当前部署 PBIT/Live Model 一致。
+- 为用户的新版 Report 需求新增 [设计/字段蓝图](../docs/GATEWAY_REPORT_V2_BLUEPRINT_20261123.md) 和 GW-011；暂定 5 页独立 V2，原报表保留。没有执行 Live Semantic Model 查询或部署操作。
+
 ## 2026-11-23 — PROD Pilot 目标复核与 GW-010 优先级调整
 
 - 用户明确**部分 Batch 成功后遇异常中断导致重复上传**对当前监控 Pilot 不是高优先级；保留 P2-T2 Mock 证据，将其从当前 GW-002 工作重点独立为 **GW-010 Deferred**，暂不进行全套 Batch Checkpoint/去重/Manifest 开发。此为业务优先级决定，**不代表缺陷修复或准许 PROD 部署**，见 [ADR-010](DECISIONS.md)。
