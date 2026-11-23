@@ -1,6 +1,7 @@
 # POC Mashup Parser｜第三轮单函数受控部署 Runbook
 
-> **2026-11-23：Pre-deployment Gate PASS；实际 Mashup DDL 尚未执行。**
+> **当前状态（2026-11-23）：Candidate 已由用户在 POC 手工执行；请勿再次执行 A 节 DDL。** 首轮 02:47–02:50 UTC Postcheck 无新 Mashup Raw/Parsed，`INCONCLUSIVE_NO_NEW_RAW`；Live Body 与 Candidate 一致，Policy Enabled/Transactional，0 observed failures。详情见 [独立评审](../../../evidence/2026-11-23/MASHUP_POSTCHECK_1045_REVIEW.md)。
+> **下一步：** 先运行 [13 只读 Activity Gate](13-mashup-postdeploy-activity-gate.kql)，`PatchUtc=2026-11-23T02:39:15.4152749Z`，仅当出现新 Mashup Raw 才重新只读运行 10/11/12。无新 Raw 不得判 Passed，不需要仅因 0 数据回滚。下述 A 节保留为历史部署记录。
 > 此操作仅限已确认的 **POC** Fabric Gateway Monitoring 数据库。**用户只手工执行 1 条 Function DDL；本地 AI / MCP 只读检查，不能代替用户写入。**
 
 ## 证据和允许范围
