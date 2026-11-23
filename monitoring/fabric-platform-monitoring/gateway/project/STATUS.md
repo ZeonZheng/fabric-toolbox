@@ -84,6 +84,12 @@
 - **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
 - T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
 
+## 2026-11-23 GW-011：转换为单份 Spec 驱动的本地实施
+
+- 用户已有本地 Power BI / MCP / Skills 开发环境，希望仅收到报告实现 `spec.md`，避免重复下载生成器和执行独立脚手架准备任务。
+- 已基于原版 Report JSON、Semantic Model TMDL / DAX 和动态 M 参数，生成**一份独立英文实现规范 `Gateway_Monitoring_V2_SPEC.md`**，在当前 ChatGPT 对话提供下载；它包含五页蓝图、真实字段/Measures、主题与布局、筛选参数、错标指标修正、安全边界和明确的 Desktop/Live 验收要求。**该附件尚未提交 GitHub 源码树。**
+- 后续工作模式：本地 AI **根据 Spec 实际构建独立 V2 PBIP 并返回文件/validation.md/截图**；ChatGPT 继续负责技术分析和最终验收，不再让用户单独操作之前的候选工程生成器。完成状态仍为**Spec 已交付，真实 PBIR/Live QA 待验证**，没有 PROD 或原版 Report 改动。
+
 ## 2026-11-23 Gateway Monitoring V2 Enhanced PBIR 工程内容候选
 
 - 完成 Python Build 工具及 5 页 **158 个 Enhanced PBIR Visual JSON** 的内容包（本对话已提供可下载 ZIP，尚未提交 GitHub 源码）；利用现有 Semantic Model TMDL 的原字段进行绑定，Card/Slicer/Line/Table/Shape/TextBox 类型已经输出。
@@ -119,7 +125,7 @@
 
 ## 当前唯一下一步
 
-**GW-011：验证已生成的 PBIR 候选包**。在本地具备 Microsoft CLI 的授权开发机先运行 Build 工具 `scaffold/validate`（禁止触碰已部署 Report/Model），处理验证错误并生成完整 PBIP；仅在结构验证通过后，再接入 Live Model、Desktop 校验 Overview、再验收其余四页。PROD Pilot 其它安全/采集关口并行规划，**无 PROD 修改**。
+**GW-011 — 按单份 V2 Spec 在现有本地开发环境实施真实 PBIP/Enhanced PBIR**，将 `validation.md` 和五页截图/项目路径反馈给 ChatGPT 核验；先实现并校验 Overview，再完成其余四页。不会要求用户再安装工具或重复执行历史候选包流程；原版/PROD 保持不变。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 按有限 PROD Pilot Readiness 优先验证重要数据的完整性/新鲜度、业务影响、安全、Retention、节点/Backfill、告警和停止条件；GW-010 重复发送与 GW-004 完整 Manifest 延期。PROD 仍未批准。
