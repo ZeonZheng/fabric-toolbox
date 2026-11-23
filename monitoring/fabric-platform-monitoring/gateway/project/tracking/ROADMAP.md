@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | **P0 — Functional POC** | Gateway → Fabric → Report 链路、8 种 Report、Heartbeat / NodeInfo 功能可用 | **功能性验收完成**；不含可靠性保证 |
 | **P1 — Data Correctness** | **当前必需** Raw 字段正确映射；Schema、数值、新数据回归合格；Patch/Rollback 可复现；被明确排除的字段保留独立风险记录 | **本轮 P1 必需 Parser 功能性 POC 验收完成（2026-11-23）**：Streaming 32/32、Aggregation 新 Raw/Parsed 各 7 行（复合 Key 2/2）、Mashup 4/4 新 Raw/Parsed 五项指标零不匹配，三组修复均已部署 POC 并同步 fork 正式 KQL Function。三个非必需 Mashup 指标按 ADR-009 → **GW-009 Deferred**，仍为已知 null；GW-005 的非必需字段覆盖评估不在本轮范围。**不保证端到端文件级完整性、长期稳定性或历史 null 回填** |
-| **P2 — Collector Reliability** | 文件/记录/批次可对账，轮转、部分失败、重试、去重、资源开销及长时间运行通过 | **当前阶段：准备只读基线与证据缺口分析，尚未可靠性验收** |
+| **P2 — Collector Reliability** | 文件/记录/批次可对账，轮转、部分失败、重试、去重、资源开销及长时间运行通过 | **当前阶段：可靠性缺口已实测，方案/验收未完成**。VM 只读快照与 Task Action 已复核；P2-T1 同路径 Move 成功；P2-T2 用真实分批函数+离线 Mock **复现部分 Batch 成功后重跑造成首批重复发送**，没有真实 Eventhouse 证据。下一步设计稳定 File/Batch/Record ID、幂等/去重、可审计对账；活动文件/轮转、真实故障恢复、长期运行仍待验证 |
 | **P3 — PROD Architecture** | Upload Manifest 方案、保留/回放、Event-time Backfill、多节点、安全与监控达成技术决策 | 规划中 |
 | **P4 — Limited PROD Pilot** | 受控部署、验证看板、Rollback、运维交接及实际验收 | 尚未批准 |
 
