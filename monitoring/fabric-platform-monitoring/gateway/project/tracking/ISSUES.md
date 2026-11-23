@@ -4,7 +4,7 @@
 
 | ID | 优先级 | 状态 | 首次记录 | 最后复核 | 问题 / 风险 | 下一动作 | 证据 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **GW-001** | P1 | **Streaming/Aggregation Passed；Mashup 最小 Precheck 通过但部署 Gate 待补** | 2026-11-17 | 2026-11-23 | 本地 AI 新报告：Mashup 4 个 Memory 目标字段各 33/33、ProcessorTime 36/36，0 ConversionLoss、0 ChangedByCast，Schema 17/17；新 v2 与历史 Blocked Candidate 的函数体未变，仍为整函数重写，其他 12 列尚未证明行为一致 | 运行唯一只读 [12 列兼容性 Gate](../kql/poc-parser-fix-20261117/value-checks/7-mashup-legacy-candidate-compatibility.kql)；PASS 后独立评审并准备受控 POC-only DDL、回归与回滚；不改 PROD | [Minimal Precheck Review](../evidence/2026-11-23/MASHUP_MINIMAL_PRECHECK_REVIEW.md) · [ADR-009](DECISIONS.md) |
+| **GW-001** | P1 | **Streaming/Aggregation Passed；Mashup 部署前验证 PASS、尚未部署** | 2026-11-17 | 2026-11-23 | 本地 AI 五项 Memory/Time 只读 Precheck 通过（4×33/33、1×36/36，Schema 17/17），12 个非目标字段 Legacy/Candidate 36/36，0 值签名或多重计数差异；不是上线后回归 | 用户核对正确 POC 环境与 Live Function/Policy 无漂移后，按 [Mashup Runbook](../kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md) 手工部署单 Function；用 10/11/12 只读 Postcheck 验证新 Raw/Parsed 与 Policy failures；不动 PROD | [Compatibility PASS](../evidence/2026-11-23/MASHUP_LEGACY_CANDIDATE_COMPATIBILITY_PASS.md) · [ADR-009](DECISIONS.md) |
 | **GW-002** | P1 | 待验证 | 2026-11-12 | 2026-11-17 | 活动日志 Move、部分 Batch 失败/重试、重复/遗漏风险 | 文件/行数/批次对账与故障测试 | [文件生命周期](../docs/ARCHITECTURE_OPERATIONS.md) |
 | **GW-003** | P1 | 待决策 | 2026-11-17 | 2026-11-17 | Raw 仅保留 1 天，回放及长期审计受限 | 评估 Retention / Archive 成本与恢复策略 | [Eventhouse Overview](../evidence/2026-11-17/EventhouseOverview.MCP.sanitized.md) |
 | **GW-004** | P2 | 设计中 | 2026-11-17 | 2026-11-17 | PROD 需 Upload Manifest 追踪 File、Hash、Rows、Batch Status | 确定快照、幂等与持久化设计 | [设计草案](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md) |
