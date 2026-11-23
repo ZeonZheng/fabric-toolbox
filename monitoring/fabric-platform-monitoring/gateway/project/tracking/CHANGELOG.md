@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — Mashup 最小 Precheck：五个字段 Dry-run 通过，12 列兼容性待验证
+
+- 用户上传本地 Eventhouse MCP 报告 `gateway-mashup-minimal-precheck-20261123.md`：现场旧 Mashup Function / Transactional Update Policy 无漂移；最近 Raw 15 Envelope / 36 行；Memory 四字段 33/33、ProcessorTime 36/36 全部无转换损失；Candidate Schema 17/17 匹配。**现场未执行任何 DDL**。
+- 本次独立复核指出：报告称“3 行五项均为空”与 ProcessorTime 36/36 不一致；“回滚后无数据损坏”不能保证。报告所谓 v2 与旧 Blocked Candidate **函数体完全相同**，仅验收范围因 ADR-009 改变。
+- 为避免整函数 `bag_unpack → mv-expand + project` 引发非目标字段回归，新增 [12 列只读兼容性 Gate](../kql/poc-parser-fix-20261117/value-checks/7-mashup-legacy-candidate-compatibility.kql)；保留 [独立评审](../evidence/2026-11-23/MASHUP_MINIMAL_PRECHECK_REVIEW.md)；必须有 Raw 数据、行数及多重签名计数完全匹配才可进入部署评审。
+- **没有改 POC/PROD Eventhouse、Table、Policy、Uploader、Scheduled Task**；Mashup 尚未部署，P2 可靠性仍未验收。
+
 ## 2026-11-23 — Mashup 范围决策：三个非必需指标转 Deferred Backlog
 - 用户确认 `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` **不是当前 Gateway Monitoring POC/计划 PROD 监控的必需指标**，决定采用 [方案 A](../docs/MASHUP_DESIGN_OPTIONS.md)。
 - [ADR-009](DECISIONS.md) 正式记录范围决定，[GW-009](ISSUES.md) 单独跟踪这三个指标的 JSON 数组语义、浮点精度及当前 Parsed null。**非必需不等于已修复**；不再为三字段阻塞 P1，也暂不向微软询问、不重复同类统计查询。
