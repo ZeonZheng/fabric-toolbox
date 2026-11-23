@@ -20,6 +20,17 @@
 | `Attempts`、`LastError`、`UpdatedUtc` | 重试和失败审计 |
 | `ParserVersion`、`SchemaVersion` | 区分文件传输完整性和后端解析兼容性 |
 
+## 2026-11-23 P2-T2 实证对设计的影响（仍为候选方案）
+
+- [P2-T2 离线测试](../evidence/2026-11-23/GW002_T2_OFFLINE_PARTIAL_BATCH_FAILURE_PASS.md) 使用真实 `Add-LogToEventHub` 分批函数 + 内存 Mock，在“Batch1 已接受、Batch2 失败、下一轮重处理文件”情况下观察到 **Batch1 被接受两次**。这是**应用重发行为复现**，不是实际 Eventhouse 已产生重复行的证明。
+- 由于源消息的 `logDate` 每次发送即时生成，**不能用 `logDate` 判断是否是同一 Batch 的重试**；现有消息没有固定 `SourceSnapshotId`、`BatchId` 或行身份。
+- **最小候选设计需要同时包含三部分，缺一不可：**
+  1. **固定 Source Snapshot + 稳定身份**：NodeId、SnapshotId（不可依赖仅文件名）、BatchId（确定性批次划分）、RecordOrdinal/RecordId；重试必须重用同一身份。
+  2. **持久化可恢复状态**：Upload Manifest 记录快照行数、批次数、每批尝试/确认/失败状态；`HTTP accepted` 不直接等于 `RawVerified`。
+  3. **下游幂等及审计**：在 Raw/Parsed/最终报告的明确位置去重或实现幂等写入，并核对各 Snapshot 的期望行数、BatchId/RecordId、已到 Raw 和 Parsed 的行数；对重复重试和 Source 自身合法的相同行值做区分。
+- **仅保存上一次成功的 Batch 下标不足以保证无重复**：若服务器接受请求但客户端超时，状态可能来不及持久化。因此仍需稳定身份 + 下游幂等/去重或其他已证明机制。
+- **目前暂不选定 KQL 物化/查询时去重、外部 Durable Queue、还是上传层幂等协议**，因其可用性、成本与现有 Parsed Update Policy 兼容性尚未评估。先由 ChatGPT 形成 POC 级方案与验收矩阵，再决定是否修改源码/表结构；PROD 不获准自动部署。
+
 ## 必须满足的限制与验收点
 
 - 活动文件仍会追加写入，直接计算 Hash / 行数会产生不稳定结果。必须先做可重复的稳定快照，或定义 Byte Offset 和 File Identity 的固定读入边界。
