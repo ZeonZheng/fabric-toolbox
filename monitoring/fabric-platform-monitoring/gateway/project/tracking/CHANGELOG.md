@@ -1,3 +1,9 @@
+## 2026-11-23 — P2-T1 同路径 Move 隔离行为测试 PASS
+
+- 用户在 POC VM PowerShell `7.6.10` 使用 `$env:TEMP` 唯一虚拟文件运行测试，`Move-Item -Path <same> -Destination <same> -Force -PassThru -ErrorAction Stop` 一次成功：`Attempts=1`、`FileReady=True`、`FileStillExists=True`、`Error=""`；测试结束仅清理虚拟文件。
+- **正式纠正此前风险假设：** 同路径 Move 在此环境不会因为路径相同而失败，不能继续按“Temp 同路径必失败”设计恢复测试。其他 Move 失败时仍可能走无条件 Merge，但尚无实际故障证据。
+- [结果证据](../evidence/2026-11-23/GW002_T1_SAME_PATH_MOVE_RESULT.md)。下一步先只读核查 POC 配置中的 HTTP `ConnectionProperties` 重试参数，再由 ChatGPT 设计部分 Batch 失败隔离测试；不实际发送请求。
+
 ## 2026-11-23 — P2 VM 递归复核完成，进入隔离行为测试
 
 - 用户在 POC VM 运行 **递归** `*Report_*.log` 清点：Source/Temp 无匹配文件，History **88 份、8 类各 11 份**；Uploader Task Action 的脚本名、`Config.live-poc.json` 参数与 Working Directory 都核对为 True。此前 Task Running / 267009 状态保持最后一次观察值（本轮未重新查询 Task State）。
