@@ -7,7 +7,7 @@
 | Gateway → Fabric → Report | **功能 POC 通过** | 曾观察到八类 Report Raw 连续出现，但未验证文件级不丢失、不重复 |
 | QueryStreamingReport | **已部署，POC 功能 Passed** | 32/32 新 Parsed 两个 Duration 非空且与 Raw 数值一致，0 mismatch |
 | QueryExecutionAggregationReport | **已部署，POC 功能 Passed** | Raw/Parsed 新样本各 7 行，组合 Key 2/2 对照、六项有值指标 0 mismatch；非 7/7 逐行对账 |
-| **MashupEvaluationReport** | **最小五字段 Precheck Passed（按本地 AI 报告）；部署 Gate 尚未完成** | 最新 Raw 36 条，四个 Memory 字段各 33/33、ProcessorTime 36/36 转换无损失；Schema 17/17。原 Candidate/Live Function 未部署，非目标 12 列兼容性仍待验证 |
+| **MashupEvaluationReport** | **POC 部署前 Gate PASS；等待用户手工部署/新数据回归** | 五项目标指标转换 4×33/33 + ProcessorTime 36/36，Schema 17/17；非目标 12 列 Legacy/Candidate 36/36、0 差异。Live Function 尚未修改，P1 还不能标记功能 Passed |
 | Mashup 数组形状/类型 | **2026-11-23 只读诊断完成** | 新 Raw 36 行；TotalBytes 44/44、TotalRows 35/35 个数组元素均可转 long；两数组共同存在 6/6 行长度相等；MaxIO 12/14 有小数 |
 | Mashup 三个非必需字段 | **范围已决定：Deferred（GW-009）** | 元素语义/聚合规则未验证、MaxIO 的 long 与小数冲突；未来有实际需求时才重新评估，不影响其余必需字段验收 |
 | **当前版本化 Report / Semantic Model 消费** | **未见对三个问题字段的直接引用** | 检查 GitHub Fabric Report JSON、可读 Semantic Model TMDL、KQL Dashboard JSON；**不证明已部署资产/二进制 PBIT/其他下游完全无依赖** |
@@ -24,13 +24,17 @@
 ## 2026-11-23 Mashup 最小 Precheck 新证据
 
 - 用户提交本地 MCP 只读报告：五个目标 Memory/Time 指标（4 × 33/33、1 × 36/36）ConversionLoss 0、ChangedByCast 0，目标 Schema 17/17；当前 Live Function 仍旧版，Update Policy 仍 Transactional。参见 [独立评审](evidence/2026-11-23/MASHUP_MINIMAL_PRECHECK_REVIEW.md)。
-- v2 Candidate 的函数体**与旧 Blocked Candidate 完全相同**，区别在三个非必需指标明确延期（GW-009）；**未完成其他 12 列逐值兼容性检查**，不能仅凭五字段成绩批准手工 DDL。
+- v2 Candidate 的函数体**与旧 Blocked Candidate 完全相同**，区别在三个非必需指标明确延期（GW-009）；该 Precheck 阶段尚未验证另外 12 列兼容性，已在下述单独 Gate 中补足。
+
+## 2026-11-23 Mashup 12 列兼容性 Gate 结果
+
+- 用户报告在 POC 原样只读执行 [compatibility.kql](kql/poc-parser-fix-20261117/value-checks/7-mashup-legacy-candidate-compatibility.kql)：**Legacy 36 / Candidate 36、DifferingSignatureGroups 0、UnmatchedRows 0、PASS**；五项目标字段的独立 Dry-run 也已通过。见 [验收证据](evidence/2026-11-23/MASHUP_LEGACY_CANDIDATE_COMPATIBILITY_PASS.md)。
+- 经过独立评审，当前 POC **部署前功能 Gate 已通过**，已准备专门的 [P1 POC Candidate](kql/poc-parser-fix-20261117/candidates/4-parse_MashupEvaluationReport_P1_minimal_POC.kql) 与 [受控部署/回归 Runbook](kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md)；现有现场旧版 Rollback 文件已确认存在。
+- **注意：这不是已部署，也不是 Mashup Postcheck Passed。** 事务性 Update Policy 风险、历史 Parsed null、GW-009 延期及 PROD 可靠性风险仍存在。
 
 ## 当前唯一下一步
 
-**让本地 Eventhouse MCP 只读运行 [Mashup 旧版 vs Candidate 12 列兼容性 Gate](kql/poc-parser-fix-20261117/value-checks/7-mashup-legacy-candidate-compatibility.kql)**。须有新 Raw 样本、旧/新行数一致、12 列值签名多重集零差异；无样本或查询失败不算通过。报告交回 ChatGPT 独立复核后，再决定是否准备 POC 受控部署。
-
-**旧 Mashup Candidate 和本地报告中的 DDL 当前均不得执行。**
+**用户按 [Mashup POC Runbook](kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md) 在已人工确认的 POC Fabric UI 手工部署**单个 Function（仅在再次核对现场 Function 与 Policy 无漂移后，先准备好回滚）。部署后立即记录真实 UTC；本地 MCP **仅只读**执行已备妥的 [10/11/12 Postcheck](kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md)，将新 Raw/Parsed 五字段对账与 Policy failures 报告交回独立评审。**任何非 POC 环境或漂移情况禁止部署**。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
