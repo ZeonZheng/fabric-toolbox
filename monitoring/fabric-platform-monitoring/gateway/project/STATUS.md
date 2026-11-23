@@ -61,9 +61,15 @@
 - VM `RNGVMC0046` / PowerShell 7.6.10；Task `Gateway-UploadLogs` Running，LastTaskResult `267009`（0x41301，表示任务运行）。
 - `Report\History` 顶层 88 文件 / 24.69 MB，8 种 Report 各 11；`Report` 顶层与 `Report\Temp` 顶层各 0；指定 `GatewayMonitoring.log` 路径未找到。**这些检查没有递归，也未核对当前 Task Action，不能直接得出 Temp 清空、无错误或上传无丢失结论**。见 [只读快照记录](evidence/2026-11-23/GW002_VM_READONLY_SNAPSHOT_20261123.md)。
 
+## 2026-11-23 VM 递归补充检查已完成
+
+- `Report` 全树递归枚举 `*Report_*.log`，只发现 **History 88 份**（8 类各 11），**没有匹配的 Source/Temp 文件**；这一点修正先前“顶层零条、子目录未知”的局限。按类型分类见 [递归快照证据](evidence/2026-11-23/GW002_VM_RECURSIVE_FOLLOWUP_20261123.md)。
+- Task Action 通过脱敏条件检查：`Run-UploadGatewayLogs.ps1` / `Config.live-poc.json` 均匹配，Working Directory 已配置。当前无可观察的 Temp 故障案例；**不意味着风险已解除**。
+- 不再重复无新信息的目录状态检查；下一步仅在隔离临时文件夹复现同路径 Move 的 PowerShell 行为。
+
 ## 当前唯一下一步
 
-**补做一次精简递归只读检查**：上次 POC VM 快照确认 Task Running（267009/0x41301），History 88 文件（8 类各 11，共 24.69 MB），但是 Source/Temp 的 0 仅是第一层非递归结果，无法排除子文件夹残留；且尚未核对 Task Action 是否指向 live-poc。下一步只读汇总文件目录分类与 Action 的脱敏摘要，然后由 ChatGPT 决定受控测试。不修改 VM/Eventhouse/PROD。
+**进行 P2-T1 纯隔离 PowerShell 行为测试**：在 `$env:TEMP` 下创建一个唯一命名的虚拟 Report 文件，验证 PowerShell 7.6.10 对同一源/目的路径执行 `Move-Item -Force -PassThru` 的结果；不运行实际 Uploader 函数、任何 HTTP 或真实 Gateway Log Root。取得结果后，由 ChatGPT 决定是否需要对 `fileReady=false` 后仍 Merge 的代码路径构建 mock 单元测试。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
