@@ -13,5 +13,6 @@
 | ADR-007 | 2026-11-17 | 单人项目精简管理，不设 Owner / Assignee；项目说明统一中文 | 已采纳：入口清晰、追踪可审计，保持维护成本低 |
 | ADR-008 | 2026-11-20 | 按 Streaming → Aggregation → Mashup 顺序，单个 Parser POC 受控部署 | **已完成本轮单函数 POC 验收（2026-11-23）**：Streaming、Aggregation 新数据 Passed；Mashup 在首轮 0 新 Raw Inconclusive 后，新 Raw/Parsed 各 4 条、五项指标零 mismatch、Policy failures 0 observed，功能 Passed。三项已同步 fork 正式 KQL Function；不涵盖 Collector 可靠性 |
 | ADR-009 | 2026-11-23（范围决定） | **采纳方案 A：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 对当前 Gateway Monitoring POC/计划中的 PROD 监控不是必需指标，转为独立延期 Backlog（GW-009）；不阻塞当前 P1 必需指标验收 | **已采纳，仅为范围决定，非技术修复：** 三字段已知 null/数组语义及精度问题保留；不擅自 SUM/FIRST/截断。**本决定当时没有改动现场**；后来按该范围定义手工部署了仅 P1 必需字段的 Mashup Candidate（2026-11-23），随后新 Raw/Parsed 4/4 的 Postcheck 已通过；表 Schema、Policy 与 PROD 仍未改。历史原 Candidate 仍保留作审计；未来有实际需求时再评估微软定义与 Schema。见 [选项](../docs/MASHUP_DESIGN_OPTIONS.md) |
+| ADR-010 | 2026-11-23（优先级调整） | **异常中断/部分 Batch 成功后重传可能重复上传单独延期**；P2-T2 的 Mock 已证实应用层重复发送，但对当前非审计级监控 Pilot 并非先行阻塞项。**优先推进关键字段覆盖、持续采集稳定性、有限 PROD 节点/Backfill、安全、Retention、告警/回滚** | **已采纳的优先级决定，不是风险修复或 PROD 部署许可。** 从 GW-002 拆分 GW-010 Deferred；完整 Manifest（GW-004）留后续强化。若正式监控要求精确计数/精确告警或审计，重新审视去重门槛。见 [Readiness Gap](../docs/PROD_READINESS_GAP_20261123.md) |
 
 详细理由参见 [架构与运维](../docs/ARCHITECTURE_OPERATIONS.md)、[Parser 审计](../docs/PARSER_SCHEMA_AUDIT.md)、[Manifest 设计](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md)。
