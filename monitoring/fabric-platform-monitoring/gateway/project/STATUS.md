@@ -56,9 +56,14 @@
 - **最高优先级的疑似缺陷：** Report 递归扫描可能再次选中 Temp；已在 Temp 的文件对自身 `Move-Item`；`fileReady=false` 不能阻止后续 Merge/删除路径。真实 PowerShell 行为和是否造成记录丢失仍需受控测试。其他风险包括 Batch 无持久化 checkpoint、重试重复和只依据 HTTP 确认本地归档。
 - 完整 [源码独立评审](evidence/2026-11-23/UPLOADER_SOURCE_RELIABILITY_REVIEW.md)，这是 **代码路径分析，不是已观察的故障**。
 
+## 2026-11-23 POC Gateway VM 快照（用户只读执行）
+
+- VM `RNGVMC0046` / PowerShell 7.6.10；Task `Gateway-UploadLogs` Running，LastTaskResult `267009`（0x41301，表示任务运行）。
+- `Report\History` 顶层 88 文件 / 24.69 MB，8 种 Report 各 11；`Report` 顶层与 `Report\Temp` 顶层各 0；指定 `GatewayMonitoring.log` 路径未找到。**这些检查没有递归，也未核对当前 Task Action，不能直接得出 Temp 清空、无错误或上传无丢失结论**。见 [只读快照记录](evidence/2026-11-23/GW002_VM_READONLY_SNAPSHOT_20261123.md)。
+
 ## 当前唯一下一步
 
-**获取一次 POC Gateway VM 只读环境快照**：核实 Scheduled Task Action/LastRunResult、PowerShell 版本、Report/Temp/History 文件计数/大小/时间戳及近期上传错误的数量与分类（不读取原始敏感 CSV 内容）。收集到现场数据后由 ChatGPT 判断下一项受控实验。**本地 AI 只承担数据收集、不承担源码风险判断；没有 VM 访问能力时明确说明，不要猜测。** 不修改 Task/Config/Log、不给 PROD 施加影响。
+**补做一次精简递归只读检查**：上次 POC VM 快照确认 Task Running（267009/0x41301），History 88 文件（8 类各 11，共 24.69 MB），但是 Source/Temp 的 0 仅是第一层非递归结果，无法排除子文件夹残留；且尚未核对 Task Action 是否指向 live-poc。下一步只读汇总文件目录分类与 Action 的脱敏摘要，然后由 ChatGPT 决定受控测试。不修改 VM/Eventhouse/PROD。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
