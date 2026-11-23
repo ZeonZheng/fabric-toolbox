@@ -84,12 +84,19 @@
 - **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
 - T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
 
+## 2026-11-23 用户确认生产化优先级调整
+
+- **P1 必需 Parser 修复已验收，不等于所有字段修复**：8 类 Gateway Performance Report 已在 `GatewayReports-Raw` 观察到；标准 Parsed 未保留全部 Raw-only 字段，GW-005 / GW-009 继续跟踪；`CopyExecutionReport` 缺少实际源样本，不能宣称已通过。Gateway Basic/Verbose/Additional Logs 不包含在当前 Performance Report Eventstream 上传范围，POC Lakehouse UploadLogs=false。
+- **GW-010 单独 Deferred：** P2-T2 离线 Mock 复现部分 Batch 成功后再处理重复发送，但用户明确此类少见异常不是有限监控 Pilot 的最高优先级；保留风险证据，不需立即做 Batch Checkpoint/完全幂等改造。完整 Manifest GW-004 留长期增强，不再作为有限监控 Pilot 的默认硬前提。
+- **更实际的 Pilot 前剩余工作**：确认实际报表必需字段及页面、代表性连续窗口数据新鲜度和无不可解释静默遗漏、Gateway 资源/业务影响、PROD 多节点与初次 Backfill 范围、QueryText 安全/RBAC、Raw 保留与回放、告警/回滚。见 [Readiness Gap](docs/PROD_READINESS_GAP_20261123.md) 和 [ADR-010](tracking/DECISIONS.md)。
+- **边界：** 这是一项优先级和验收范围调整，并没有批准/开始 PROD Pilot，也没有修改 POC/PROD Uploader。
+
 ## 当前唯一下一步
 
-**由 ChatGPT 完成 GW-002 / GW-004 最小幂等与可对账方案评审**：基于已复现的 T2 Partial Batch Duplicate，明确稳定 Snapshot / Batch / Record ID、失败未知状态处理、下游去重与 Raw/Parsed 可审计对账的最小 POC 验收条件。先做设计，不重复同类模拟、不改 Uploader / Eventhouse / Scheduler / PROD；之后再确定需不需要受控测试。
+**开展有限 PROD Pilot Readiness 最小核对（先只读）**：确定需要展示的 Report 页面/指标，并以当前工作分支 Schema 和已验证的 8 类 Raw 覆盖为基线，列出真正缺少的必需字段及上线最小差距；并行安排连续运行/节点部署、安全 Retention/Backfill/告警的可验证检查。**不再优先做异常重发/完整 Manifest 设计，也不直接变更 PROD。**
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
-- **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
+- **之后优先：** 按有限 PROD Pilot Readiness 优先验证重要数据的完整性/新鲜度、业务影响、安全、Retention、节点/Backfill、告警和停止条件；GW-010 重复发送与 GW-004 完整 Manifest 延期。PROD 仍未批准。
 - **现场边界：** 2026-11-23 用户仅在 **POC** 手工更新过 Mashup Live Function；随后 Postcheck 全程只读。本轮将已验证逻辑同步至 GitHub 正式 KQL 源码；Parsed Schema、Update Policy、Uploader、PROD 均无本次修改。
 
 [问题台账](tracking/ISSUES.md) · [进展记录](tracking/CHANGELOG.md) · [设计决定](docs/MASHUP_DESIGN_OPTIONS.md)。
