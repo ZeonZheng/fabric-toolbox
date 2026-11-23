@@ -1,3 +1,9 @@
+## 2026-11-23 — P2 VM 递归复核完成，进入隔离行为测试
+
+- 用户在 POC VM 运行 **递归** `*Report_*.log` 清点：Source/Temp 无匹配文件，History **88 份、8 类各 11 份**；Uploader Task Action 的脚本名、`Config.live-poc.json` 参数与 Working Directory 都核对为 True。此前 Task Running / 267009 状态保持最后一次观察值（本轮未重新查询 Task State）。
+- 证据见 [递归 VM 复核](../evidence/2026-11-23/GW002_VM_RECURSIVE_FOLLOWUP_20261123.md)。当前未见残留/积压，不代表源端消息零遗漏；`fileReady=false` 时后续 Merge 的源码风险仍未通过故障实验验证。
+- 下一步只在唯一命名的 `$env:TEMP` 目录用虚拟 CSV 测试 PowerShell `Move-Item` 同路径行为，不调用真实 Uploader 函数或 HTTP，也不影响 Gateway VM 上活动日志。
+
 ## 2026-11-23 — P2 Gateway VM 只读运行快照（首次）
 
 - 用户在 POC VM `RNGVMC0046` 使用 PowerShell 7.6.10 执行只读快照：Task `Gateway-UploadLogs` Running / LastTaskResult `267009` (0x41301，Running)，History 顶层 **88 文件 / 24.69 MB**，8 类日志各 **11** 份；Source/Temp 顶层匹配 0，指定错误日志路径未找到。
