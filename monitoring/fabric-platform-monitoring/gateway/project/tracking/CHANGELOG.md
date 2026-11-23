@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — Mashup 范围决策：三个非必需指标转 Deferred Backlog
+- 用户确认 `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` **不是当前 Gateway Monitoring POC/计划 PROD 监控的必需指标**，决定采用 [方案 A](../docs/MASHUP_DESIGN_OPTIONS.md)。
+- [ADR-009](DECISIONS.md) 正式记录范围决定，[GW-009](ISSUES.md) 单独跟踪这三个指标的 JSON 数组语义、浮点精度及当前 Parsed null。**非必需不等于已修复**；不再为三字段阻塞 P1，也暂不向微软询问、不重复同类统计查询。
+- GW-001 继续跟踪**必需**的 Mashup/其它 Parser 字段正确性；原 Mashup Candidate 仍 Blocked，Live Function / Schema / Update Policy / PROD 均未修改。本次仅修改 GitHub 项目文档、范围与验收口径。
+- 下一步核查剩余必需的 Mashup 指标及实际新数据是否正确，若确实缺失再讨论最小修复；随后重点推进 Collector 端到端可靠性和 PROD 前置条件。
+
 ## 2026-11-23 09:50–09:55（UTC+8）— Mashup Array/Decimal Shape 已验证，进入设计范围评审
 - 用户的本地 Eventhouse Remote MCP 按工作分支运行三份只读查询：Query 05 原文成功，Query 04/06 的 `floor(x)` 报 `bin() expects 2 arguments`，本地修为 `floor(x,1.0)` 后成功。**已把最小语法修正提交 GitHub 的只读 KQL**。
 - Raw 1 天窗口 **36 条**：TotalBytes 23 条（17 单、6 多）共 **44/44 long 可转换元素**；TotalRows 12 条（4 单、8 多）共 **35/35 long 可转换元素**；两个数组同时出现 **6/6 长度相等**，但含义与是否可以聚合仍未证实。MaxIO 14 有值，**12/14** 含小数；目标表 long 无法精确保留。
