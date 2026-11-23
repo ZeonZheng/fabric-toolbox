@@ -27,3 +27,7 @@
 - P2 Collector Reliability 与 PROD 部署仍是独立验收关口，未批准。
 
 相关：[STATUS](../../STATUS.md) · [GW-001/GW-009](../../tracking/ISSUES.md) · [ADR-009](../../tracking/DECISIONS.md)。
+
+## 2026-11-23 后续补充：兼容性 Gate 已 PASS（原先的 Conditional GO 得以解除）
+
+用户后续提供的本地 MCP 结果：`LegacyRows=36`、`CandidateRows=36`、`DifferingSignatureGroups=0`、`UnmatchedRows=0`、`Result=PASS`。详见 [单独证据](MASHUP_LEGACY_CANDIDATE_COMPATIBILITY_PASS.md)。因此**只读部署前 Gate 已通过**，已准备 [POC P1 Candidate](../../kql/poc-parser-fix-20261117/candidates/4-parse_MashupEvaluationReport_P1_minimal_POC.kql) 和 [Mashup Runbook](../../kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md)。本报告上文中的“12 列未验证”属于**当时快照**，不是当前状态。**尚未执行 DDL，不代表部署后验收通过。**
