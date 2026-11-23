@@ -84,6 +84,12 @@
 - **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
 - T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
 
+## 2026-11-23 Gateway Monitoring V2 设计反馈与下一工程关口
+
+- 用户已查看五页交互原型并反馈**“看起来不错”**；据此暂定五页视觉与信息架构为 **V2 初版设计基线**，无需回到重新讨论整体风格。此反馈**不是**对可发布 Power BI Report 的技术验收。
+- 下一工程任务仍为 **GW-011：建立独立 Enhanced PBIR/PBIP 并接入现有 Semantic Model；优先实现 Overview、验证 KPI 与 DirectQuery 动态 M 参数**。本助手当前运行环境的 npm Registry 网络/DNS 不通，未能安装官方 `@microsoft/powerbi-report-authoring-cli` 创建有效工程，因此**不声称 PBIR 已生成、验证或发布**。
+- 不改原版 Report、Model、Eventhouse、Uploader 或 PROD；需要本地 Power BI Desktop/CLI 环境时仅将明确脚手架/文件操作交给本地工具执行，本助手负责架构、字段、DAX 与验收判断。
+
 ## 2026-11-23 Gateway Monitoring V2 五页 UI 原型已完成
 
 - 已生成（本对话可下载）：**交互式 HTML Prototype**、**5 页可编辑 Draw.io 线框图**、Overview 截图、字段/实现说明与 ZIP 打包。通过本地无网络浏览器测试：5 页可切换，模拟 Period/Cluster/Node 筛选、主要趋势及表格正常渲染。**全部数字、Node 和 Error 为 synthetic demo data**，没有连接 Fabric 或访问用户实际模型。
