@@ -78,9 +78,15 @@
 - 用户在 VM 上只读确认 `Config.live-poc.json`：`ConfigFound=True`、`RetryConfigExists=True`、`MaximumRetryCount=3`、`RetryIntervalSec=1`；对应 `Utils.psm1:362–369` 的 HTTP 请求参数。原先怀疑配置缺失的风险**在本 POC 已排除**。见 [Retry 配置评审](evidence/2026-11-23/GW002_HTTP_RETRY_CONFIG_REVIEW_20261123.md)。
 - PowerShell 自动重试是 HTTP 400–599/304 响应级重试（429 的 Retry-After 可能覆盖配置），**不是 Batch 进度 checkpoint 或端到端幂等机制**。核心未验证风险是已成功 Batch 在后续失败后整文件重传导致重复；不需再检查或调整 3/1 配置。
 
+## 2026-11-23 P2-T2 部分 Batch 失败：重复发送已在 Mock 中复现
+
+- 用户在 POC VM 通过**本地 `Utils.psm1` 的实际 `Add-LogToEventHub` 分批函数 + 内存 Mock `Add-MsgEventHub`** 完全离线测试：合成 CSV 2,001 行，首次 Run 成功“接受”第一批 2,000 行、第二批模拟失败；下一次运行从头重发；Mock 接受 Run1 2,000、Run2 2,000 + 1 行，`DuplicateBatchObserved=True`，第一批重复接受两次。见 [独立验收](evidence/2026-11-23/GW002_T2_OFFLINE_PARTIAL_BATCH_FAILURE_PASS.md)。
+- **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
+- T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
+
 ## 当前唯一下一步
 
-**P2-T2 — 隔离 Batch Partial Failure 测试**：以模拟 CSV 数据和内存 Mock 发送函数验证原有 `Add-LogToEventHub` 分批逻辑在第一批成功、第二批失败、重新处理文件时是否重发第一批。只在合成数据/临时目录运行；不得调用真实 `Add-MsgEventHub` 网络实现、修改 Gateway Report/Temp/History、Scheduler/Config 或 PROD。由 ChatGPT 对结果独立评审，不再让本地 AI 决定风险。
+**由 ChatGPT 完成 GW-002 / GW-004 最小幂等与可对账方案评审**：基于已复现的 T2 Partial Batch Duplicate，明确稳定 Snapshot / Batch / Record ID、失败未知状态处理、下游去重与 Raw/Parsed 可审计对账的最小 POC 验收条件。先做设计，不重复同类模拟、不改 Uploader / Eventhouse / Scheduler / PROD；之后再确定需不需要受控测试。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
