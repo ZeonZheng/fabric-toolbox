@@ -84,6 +84,12 @@
 - **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
 - T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
 
+## 2026-11-23 Gateway Monitoring V2 五页 UI 原型已完成
+
+- 已生成（本对话可下载）：**交互式 HTML Prototype**、**5 页可编辑 Draw.io 线框图**、Overview 截图、字段/实现说明与 ZIP 打包。通过本地无网络浏览器测试：5 页可切换，模拟 Period/Cluster/Node 筛选、主要趋势及表格正常渲染。**全部数字、Node 和 Error 为 synthetic demo data**，没有连接 Fabric 或访问用户实际模型。
+- 五页：**Overview / Gateway Health / Query Performance / Failures & Diagnostics / Job Detail**。字段合同以当前 GitHub Semantic Model TMDL / KQL 定义为准，见 [V2 Field Contract](docs/GATEWAY_REPORT_V2_FIELD_CONTRACT.md)。
+- **边界与下一项交付：** 这是经浏览器验证的 UI **设计原型**，**不是已验证 PBIP/PBIR**。现有上游报表是 PBIR-Legacy；需基于 Desktop/官方 CLI 的合法 Enhanced PBIR scaffold 再绑定 Live Model、完成真实视觉与数值验收。没有改动已部署 Report、Semantic Model、Eventhouse、Gateway Uploader 或 PROD。
+
 ## 2026-11-23 Report 消费审计与 V2 改版启动
 
 - 直接读取 GitHub `src/Gateway/Gateway Monitoring.Report/report.json` 和对应 Semantic Model TMDL：**6 页、58 Visual**；原版模型四个 KQL 功能来源为 `GatewayNodeStatusWithInfo`、`SystemCounters`、`QueryExecutionUnified`、`QueryConnections`。
@@ -100,7 +106,7 @@
 
 ## 当前唯一下一步
 
-**开展有限 PROD Pilot Readiness 最小核对（先只读）**：确定需要展示的 Report 页面/指标，并以当前工作分支 Schema 和已验证的 8 类 Raw 覆盖为基线，列出真正缺少的必需字段及上线最小差距；并行安排连续运行/节点部署、安全 Retention/Backfill/告警的可验证检查。**不再优先做异常重发/完整 Manifest 设计，也不直接变更 PROD。**
+**V2 报表工程转换（GW-011）+ PROD Pilot Readiness 并行**：先使用官方 CLI/Desktop 有效脚手架创建独立 Enhanced PBIR/PBIP，基于 [Field Contract](docs/GATEWAY_REPORT_V2_FIELD_CONTRACT.md) 实现 Overview、绑定现有 Model 并核对关键 KPI/动态参数；后续逐页实现。上线前同时核对字段必需范围、采集连续性、节点 Backfill、安全/Retention/告警。**不覆盖原版、不直接变更 PROD。**
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 按有限 PROD Pilot Readiness 优先验证重要数据的完整性/新鲜度、业务影响、安全、Retention、节点/Backfill、告警和停止条件；GW-010 重复发送与 GW-004 完整 Manifest 延期。PROD 仍未批准。
