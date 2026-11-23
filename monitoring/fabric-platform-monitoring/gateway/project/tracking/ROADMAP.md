@@ -5,7 +5,7 @@
 | 阶段 | 关键交付 / 通过条件 | 状态 |
 | --- | --- | --- |
 | **P0 — Functional POC** | Gateway → Fabric → Report 链路、8 种 Report、Heartbeat / NodeInfo 功能可用 | **功能性验收完成**；不含可靠性保证 |
-| **P1 — Data Correctness** | **当前必需** Raw 字段正确映射；Schema、数值、新数据回归合格；Patch/Rollback 可复现；被明确排除的字段保留独立风险记录 | **部分完成**：Streaming + Aggregation POC Passed；Mashup 三个非必需指标（TotalBytes/TotalRows/MaxIO）按 ADR-009 移至 **GW-009 Deferred**，不阻塞本阶段。Mashup 其余必需字段仍需核查实际 Parsed 数据，原 Candidate 未部署且 Blocked；不得宣称全字段正确。历史 null、端到端上传可靠性和长期稳定性均未验收 |
+| **P1 — Data Correctness** | **当前必需** Raw 字段正确映射；Schema、数值、新数据回归合格；Patch/Rollback 可复现；被明确排除的字段保留独立风险记录 | **接近收尾，未关闭**：Streaming + Aggregation POC 功能性 Passed；Mashup P1 最小 Candidate 已于 2026-11-23 在 POC 手工部署，部署前五字段数值 / 12 列兼容性检查通过，Live Body 与 Candidate 一致，但首轮 Postcheck 新 Raw/Parsed=0，**INCONCLUSIVE**。待真实新 Mashup 记录验证五指标正确性。三个非必需指标（TotalBytes/TotalRows/MaxIO）按 ADR-009 → **GW-009 Deferred**，不阻塞。历史 null、端到端上传可靠性和长期稳定性均未验收 |
 | **P2 — Collector Reliability** | 文件/记录/批次可对账，轮转、部分失败、重试、去重、资源开销及长时间运行通过 | 未完成 |
 | **P3 — PROD Architecture** | Upload Manifest 方案、保留/回放、Event-time Backfill、多节点、安全与监控达成技术决策 | 规划中 |
 | **P4 — Limited PROD Pilot** | 受控部署、验证看板、Rollback、运维交接及实际验收 | 尚未批准 |
