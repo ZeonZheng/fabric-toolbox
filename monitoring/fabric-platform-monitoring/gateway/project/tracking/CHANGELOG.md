@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — GW-011 改为单份实现 Spec + 本地 AI 执行
+
+- 用户明确已有本地 Power BI 环境，要求只交付报告实现 `spec.md`，减少人为运行脚手架/生成器操作。
+- ChatGPT 直接核对版本化原 Report/TMDL/DAX/Dynamic M，生成**`Gateway_Monitoring_V2_SPEC.md`（当前对话独立文件，尚未入 GitHub）**：五页实施细则、真实列和 Measure、P90 单位与 Nodes 语义警示、动态参数筛选、诊断权限、布局及验收条件。
+- 下一步本地 AI 基于 Spec 实施独立 PBIP/Enhanced PBIR，返回 validation.md/截图供 ChatGPT 判断；无原版 Fabric 资产或 PROD 变更。
+
 ## 2026-11-23 — V2 Enhanced PBIR 工程候选：五页 158 Visual 内容生成
 
 - 用户确认设计方向后，进一步生成 **Python Build 工具和完整五页 PBIR 内容候选**：Overview 39、Gateway Health 29、Query Performance 34、Failures & Diagnostics 28、Job Detail 28，合计 158 个 Visual JSON（包含装饰 Shape/TextBox），附先前设计规范与概览预览打包 ZIP 供当次会话下载。
