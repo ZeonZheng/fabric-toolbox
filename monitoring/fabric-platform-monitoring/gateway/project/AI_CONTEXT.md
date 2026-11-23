@@ -1,6 +1,6 @@
 # AI / 技术交接说明
 
-> 更新时间：2026-11-23 09:55（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
+> 更新时间：2026-11-23（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
 
 ## 固定背景
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点（以 STATUS 为准）：** Streaming（32/32）与 Aggregation（7 新行、2/2 Key）POC 功能 Passed。Mashup 原 Candidate 仍 **Blocked/未部署**。2026-11-23 MCP Shape Follow-up 在近 24h Raw 36 条中确认 TotalBytes 44/44、TotalRows 35/35 个数组元素可转 long、同时存在的 6/6 两数组等长，但**没有上游语义定义**；MaxIO 12/14 含小数，目标 long 不支持无损精度。Query 04/06 的单参数 `floor()` 报错已在 GitHub **只读诊断脚本**修复；报告见 [Nov23 证据](evidence/2026-11-23/README.md)。此外工作分支版本化 Gateway Fabric Report、Semantic Model、KQL Dashboard **无问题字段的直接引用**（并不等于已部署/二进制 PBIT/外部下游没有依赖）。**下一步不是再运行 MCP 形状查询，而是先评审 Mashup 字段的业务必要性**，见 [Design Options](docs/MASHUP_DESIGN_OPTIONS.md)，不能擅自决定 SUM/FIRST/小数取整、执行 Mashup DDL 或关闭 GW-001。
+**当前交接点（以 STATUS 为准）：** Streaming（32/32）与 Aggregation（7 新行、2/2 Key）POC 功能 Passed。Mashup 原 Candidate 仍 **Blocked/未部署**。2026-11-23 已由用户决定 `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` **不是当前 POC/计划 PROD 监控必需指标**，采纳 [ADR-009](tracking/DECISIONS.md) 方案 A，三字段解析/完整性问题独立列为 [GW-009 Deferred](tracking/ISSUES.md)，**不再阻塞当前 P1 必需字段验收，但也不意味着数据已修好**。本地 MCP Shape 证据（44/44 + 35/35 元素可转 long、6/6 等长、MaxIO 12/14 小数）保留在 [Nov23 证据](evidence/2026-11-23/README.md)，数组业务语义未证实。**不要重复相同形状统计，也不需要立即询问 Microsoft**；现有 Mashup Function / Schema / Update Policy / PROD 均未修改。**下一步：核查其他必需 Mashup Memory/Time/CPU/IO 指标在新 Raw/Parsed 中是否正确；若已正常则不强行部署修复，若确有缺陷才设计最小 Candidate 并完成受控回归。之后推进 Collector 可靠性验收。**
