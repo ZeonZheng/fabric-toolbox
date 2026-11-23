@@ -1,0 +1,34 @@
+// POC-only Mashup P1 minimal Candidate (2026-11-23) — MANUAL POC rollout only.
+// Five target Memory/Time fields were dry-run validated; 12 other columns passed
+// Legacy-vs-Candidate compatibility for 36 Raw records (0 unmatched rows).
+// PRE-DEPLOYMENT PASS != POST-DEPLOYMENT PASS. User must verify POC identity,
+// confirm original live function and transactional policy have not drifted,
+// keep rollback ready, and manually execute this one DDL in Fabric UI.
+// ADR-009 / GW-009: TotalBytes, TotalRows, MaxIODataBytesPerSecond NOT REQUIRED
+// and knowingly remain null for their observed array/decimal source payloads.
+// NO Schema / Policy / Uploader / PROD change. No historical reprocessing.
+// This Function Body matches historical blocked candidate exactly: scope decision
+// and additional compatibility evidence changed, not its parsing algorithm.
+.create-or-alter function with (folder = "UpdatePolicyFunctions", docstring = "Function to extract data from MashupEvaluationReport") parse_MashupEvaluationReport() {
+['GatewayReports-Raw']
+| where logType == "MashupEvaluationReport"
+| mv-expand record = log
+| project
+    GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+    QueryTrackingId = toguid(tostring(record.QueryTrackingId)),
+    ConnectionId = toguid(tostring(record.ConnectionId)),
+    DataSourceKinds = tostring(record.DataSourceKinds), // No corresponding CSV key in the observed sample; intentionally not inferred
+    DataSourcePaths = tostring(record.DataSourcePaths), // Same limitation; do not equate to DataSource without inspecting payload
+    EndTimeUTC = todatetime(record.EndTimeUTC),
+    ['AverageCommit byte'] = toreal(record["AverageCommit(byte)"]),
+    AverageIODataBytesPerSecond = toreal(record.AverageIODataBytesPerSecond),
+    AveragePercentProcessorTime = toreal(record.AveragePercentProcessorTime),
+    ['AverageWorkingSet byte'] = toreal(record["AverageWorkingSet(byte)"]),
+    ['MaxCommit byte'] = tolong(record["MaxCommit(byte)"]),
+    MaxIODataBytesPerSecond = tolong(record.MaxIODataBytesPerSecond),
+    MaxPercentProcessorTime = toreal(record.MaxPercentProcessorTime),
+    ['MaxWorkingSet byte'] = tolong(record["MaxWorkingSet(byte)"]),
+    TotalBytes = tolong(record.TotalBytes),
+    TotalProcessorTime = toreal(record["TotalProcessorTime(ms)"]) * 1ms,
+    TotalRows = toreal(record.TotalRows)
+}
