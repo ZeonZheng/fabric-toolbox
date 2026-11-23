@@ -1,0 +1,31 @@
+// READ ONLY. Replace the sample PatchUtc with actual UTC recorded after manual POC DDL.
+// Raw.logDate = envelope time; Parsed.ingestion_time() = ingestion time.
+// These are diagnostic windows, not a file-level exactly-once or zero-loss proof.
+let PatchUtc = datetime(2099-01-01T00:00:00Z);
+let Raw = ['GatewayReports-Raw']
+| where logType == "MashupEvaluationReport" and logDate >= PatchUtc
+| mv-expand record = log
+| summarize
+    Rows=count(),
+    AverageCommit_NonNull=countif(isnotnull(toreal(record["AverageCommit(byte)"]))),
+    AverageWorkingSet_NonNull=countif(isnotnull(toreal(record["AverageWorkingSet(byte)"]))),
+    MaxCommit_NonNull=countif(isnotnull(tolong(record["MaxCommit(byte)"]))),
+    MaxWorkingSet_NonNull=countif(isnotnull(tolong(record["MaxWorkingSet(byte)"]))),
+    ProcessorTime_NonNull=countif(isnotnull(toreal(record["TotalProcessorTime(ms)"]))),
+    LatestUtc=max(logDate)
+| extend Layer="Raw", TimeKind="logDate";
+let Parsed = MashupEvaluationReport
+| where ingestion_time() >= PatchUtc
+| summarize
+    Rows=count(),
+    AverageCommit_NonNull=countif(isnotnull(['AverageCommit byte'])),
+    AverageWorkingSet_NonNull=countif(isnotnull(['AverageWorkingSet byte'])),
+    MaxCommit_NonNull=countif(isnotnull(['MaxCommit byte'])),
+    MaxWorkingSet_NonNull=countif(isnotnull(['MaxWorkingSet byte'])),
+    ProcessorTime_NonNull=countif(isnotnull(TotalProcessorTime)),
+    LatestUtc=max(ingestion_time())
+| extend Layer="Parsed", TimeKind="ingestion_time()";
+union Raw, Parsed
+| project Layer, TimeKind, Rows, AverageCommit_NonNull, AverageWorkingSet_NonNull,
+  MaxCommit_NonNull, MaxWorkingSet_NonNull, ProcessorTime_NonNull, LatestUtc
+| order by Layer asc
