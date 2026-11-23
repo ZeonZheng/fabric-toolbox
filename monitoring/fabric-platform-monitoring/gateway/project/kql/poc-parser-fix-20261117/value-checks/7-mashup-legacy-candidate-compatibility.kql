@@ -1,0 +1,79 @@
+// 2026-11-23 - READ ONLY. POC Mashup legacy-vs-candidate compatibility gate.
+// Do NOT run any .create-or-alter / DDL. Do NOT print Raw, GUIDs, QueryText, or row signatures.
+// Goal: Compare all 12 NON-TARGET column values and multiplicities, not just schema.
+// Five intentionally repaired Memory/Time fields are excluded from this comparison.
+// GW-009 deferred columns are INCLUDED to verify unchanged behavior.
+// 0 input rows = INCONCLUSIVE, NOT a pass.
+// Requires live Raw window, typically retained for just one day.
+let Source = materialize(
+    ['GatewayReports-Raw']
+    | where logType == "MashupEvaluationReport"
+    | project log
+    | mv-expand log
+);
+let Legacy = Source
+    | evaluate bag_unpack(log) : (
+        GatewayObjectId:guid,
+        QueryTrackingId:guid,
+        ConnectionId:guid,
+        DataSourceKinds:string,
+        DataSourcePaths:string,
+        EndTimeUTC:datetime,
+        ['AverageCommit byte']:real,
+        AverageIODataBytesPerSecond:real,
+        AveragePercentProcessorTime:real,
+        ['AverageWorkingSet byte']:real,
+        ['MaxCommit byte']:long,
+        MaxIODataBytesPerSecond:long,
+        MaxPercentProcessorTime:real,
+        ['MaxWorkingSet byte']:long,
+        TotalBytes:long,
+        TotalProcessorTime:timespan,
+        TotalRows:real
+    );
+let Candidate = Source
+    | extend record = log
+    | project
+        GatewayObjectId = toguid(tostring(record.GatewayObjectId)),
+        QueryTrackingId = toguid(tostring(record.QueryTrackingId)),
+        ConnectionId = toguid(tostring(record.ConnectionId)),
+        DataSourceKinds = tostring(record.DataSourceKinds),
+        DataSourcePaths = tostring(record.DataSourcePaths),
+        EndTimeUTC = todatetime(record.EndTimeUTC),
+        ['AverageCommit byte'] = toreal(record["AverageCommit(byte)"]),
+        AverageIODataBytesPerSecond = toreal(record.AverageIODataBytesPerSecond),
+        AveragePercentProcessorTime = toreal(record.AveragePercentProcessorTime),
+        ['AverageWorkingSet byte'] = toreal(record["AverageWorkingSet(byte)"]),
+        ['MaxCommit byte'] = tolong(record["MaxCommit(byte)"]),
+        MaxIODataBytesPerSecond = tolong(record.MaxIODataBytesPerSecond),
+        MaxPercentProcessorTime = toreal(record.MaxPercentProcessorTime),
+        ['MaxWorkingSet byte'] = tolong(record["MaxWorkingSet(byte)"]),
+        TotalBytes = tolong(record.TotalBytes),
+        TotalProcessorTime = toreal(record["TotalProcessorTime(ms)"]) * 1ms,
+        TotalRows = toreal(record.TotalRows);
+let LegacyCounts = Legacy
+    | summarize LegacyCount=count() by Signature=hash_sha256(tostring(pack_array(
+        GatewayObjectId, QueryTrackingId, ConnectionId, DataSourceKinds, DataSourcePaths,
+        EndTimeUTC, AverageIODataBytesPerSecond, AveragePercentProcessorTime,
+        MaxIODataBytesPerSecond, MaxPercentProcessorTime, TotalBytes, TotalRows
+    )));
+let CandidateCounts = Candidate
+    | summarize CandidateCount=count() by Signature=hash_sha256(tostring(pack_array(
+        GatewayObjectId, QueryTrackingId, ConnectionId, DataSourceKinds, DataSourcePaths,
+        EndTimeUTC, AverageIODataBytesPerSecond, AveragePercentProcessorTime,
+        MaxIODataBytesPerSecond, MaxPercentProcessorTime, TotalBytes, TotalRows
+    )));
+LegacyCounts
+| join kind=fullouter CandidateCounts on Signature
+| extend OldN=coalesce(LegacyCount,0), NewN=coalesce(CandidateCount,0)
+| summarize
+    LegacyRows=sum(OldN),
+    CandidateRows=sum(NewN),
+    DifferingSignatureGroups=countif(OldN != NewN),
+    UnmatchedRows=sum(abs(OldN - NewN))
+| extend Result=case(
+    LegacyRows == 0 and CandidateRows == 0, "INCONCLUSIVE_NO_RAW",
+    LegacyRows == CandidateRows and DifferingSignatureGroups == 0 and UnmatchedRows == 0, "PASS",
+    "FAIL"
+)
+| project LegacyRows, CandidateRows, DifferingSignatureGroups, UnmatchedRows, Result
