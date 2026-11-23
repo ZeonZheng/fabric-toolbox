@@ -61,7 +61,15 @@ Report 共 **6 页 / 58 Visual**：
 3. 真实 Live 模型是否和 GitHub 版本相同？DAX/M 参数、模型关系及安全权限有无漂移？
 4. 用户可见的 KPI 是否有时间语义和可解释定义（尤其 Last Status、Running Jobs、Average vs P90）？
 
-## 5. 具体交付与验收顺序（避免大范围重做）
+## 5. 实现格式与 Live Model 边界
+
+- **当前源码的 `Gateway Monitoring.Report/report.json` 是 PBIR-Legacy**；另有 `gateway/PBI Report/Gateway Monitor.pbit`，二者并非同一份可直接编辑源码。旧 `report.json` 不建议直接手工修改以制作新视觉，Microsoft 对外部编程编辑的文档化支持主要面向 [Enhanced PBIR](https://learn.microsoft.com/en-us/power-bi/developer/embedded/projects-enhanced-report-format)；原版文件不能证明 Live Report 与 GitHub 版本一致。
+- `definition.pbir` 的 `datasetReference.byConnection` 包含模板/占位的 `00000000-0000-0000-0000-000000000000`，不能据此认定可以直接连接当前真实模型。
+- **V2 实施路径：** 保留 Live Semantic Model，创建**独立的 Report（thin/live-connected report）**，在 Power BI Desktop 中保存为 **PBIP + Enhanced PBIR**，之后可按公开 Schema 进行页面/Visual 文件级优化。Microsoft 文档：[连接已有 Semantic Model](https://learn.microsoft.com/en-us/power-bi/connect-data/desktop-report-lifecycle-datasets) 与 [PBIR 文件结构](https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-report)。
+- **连接 Live Model 的正确时机：** 版本化源码审计和页面设计已可离线完成；实际实施/测试 Report 时才需用具备 Build 权限的用户连接**真正部署的 Model**，核实可能的版本漂移、DateToSearch 等动态 M 参数、KQL 查询行为、Measure 输出和 RLS/敏感数据控制。
+- 本设计仅是设计文件，**还没有生成可打开的 V2 PBIP/PBIR**；不得向用户声称 Report 已构建或已发布。
+
+## 6. 具体交付与验收顺序（避免大范围重做）
 
 - **Step 1 — GitHub 源码审计：已开始。** 本文已检查页面、四个 KQL Source 路径和主要 Measures；下一步逐个细化 V2 必需指标清单。
 - **Step 2 — UI 方案：** 新建独立 `Gateway Monitoring V2` Report，第一版优先复用现有模型及真实 Measures；必要时只新增少量正确命名的 DAX。
