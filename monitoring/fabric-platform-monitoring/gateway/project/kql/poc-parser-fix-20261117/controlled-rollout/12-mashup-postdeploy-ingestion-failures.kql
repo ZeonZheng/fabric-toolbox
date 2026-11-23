@@ -1,0 +1,8 @@
+// READ ONLY administrative query. Replace PatchUtc with actual recorded UTC.
+// Output grouped count only; do NOT export error details containing sensitive data.
+// Investigate related table/policy failures before proceeding.
+.show ingestion failures
+| where FailedOn >= datetime(2099-01-01T00:00:00Z)
+| where OriginatesFromUpdatePolicy == true
+| summarize FailureCount=count(), FirstFailureUtc=min(FailedOn), LastFailureUtc=max(FailedOn) by Table, FailureKind
+| order by FailureCount desc
