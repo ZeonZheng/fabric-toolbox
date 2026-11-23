@@ -11,7 +11,7 @@
 | Mashup 数组形状/类型 | **2026-11-23 只读诊断完成** | 新 Raw 36 行；TotalBytes 44/44、TotalRows 35/35 个数组元素均可转 long；两数组共同存在 6/6 行长度相等；MaxIO 12/14 有小数 |
 | Mashup 三个非必需字段 | **范围已决定：Deferred（GW-009）** | 元素语义/聚合规则未验证、MaxIO 的 long 与小数冲突；未来有实际需求时才重新评估，不影响其余必需字段验收 |
 | **当前版本化 Report / Semantic Model 消费** | **未见对三个问题字段的直接引用** | 检查 GitHub Fabric Report JSON、可读 Semantic Model TMDL、KQL Dashboard JSON；**不证明已部署资产/二进制 PBIT/其他下游完全无依赖** |
-| GitHub 正式 KQL Schema | **仅 Streaming + Aggregation 已同步** | Mashup 仍使用旧 Function；未改 Parsed Schema、Policy、Uploader 或 PROD |
+| GitHub 正式 KQL Schema | **仅 Streaming + Aggregation 已同步** | **POC Live Mashup 已是新 Function**，但 fork 正式 DatabaseSchema.kql 中的 Mashup 仍旧版；待新数据 Postcheck PASS 后同步。Parsed Schema、Policy、Uploader、PROD 未改 |
 | 历史回填与 PROD 可靠性 | **未验收** | 历史 null、Uploader Manifest、重试幂等、Retention、Multi-Node、长期稳定性仍开放 |
 
 ## 2026-11-23 最新证据
@@ -49,6 +49,6 @@
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
-- **现场边界：** 本次只有 GitHub 文档变更；Eventhouse Live Function、Parsed Schema、Update Policy、Uploader、PROD 均未修改。
+- **现场边界：** 2026-11-23 用户已在 **POC** 手工更新 Mashup Live Function；其后 Postcheck 全程只读。Parsed Schema、Update Policy、Uploader、PROD 均无本次修改。
 
 [问题台账](tracking/ISSUES.md) · [进展记录](tracking/CHANGELOG.md) · [设计决定](docs/MASHUP_DESIGN_OPTIONS.md)。
