@@ -2,6 +2,8 @@
 
 > **执行人：** ChatGPT 直接读取 GitHub 工作分支源码（未将任务委托本地 AI）。**范围：** 仅静态源码分析，不代表已在 POC VM 触发或观察到故障；未执行故障注入、VM 文件操作或 Eventhouse DDL。
 
+> **实测修正（2026-11-23）：** [P2-T1 同路径 Move 隔离实测](GW002_T1_SAME_PATH_MOVE_RESULT.md) 在 PowerShell 7.6.10 一次成功、文件保留，故“Temp 同路径 Move 必报错”假设已被否定。下表风险 1 为**原始静态分析的历史记录**，其触发原因不能再归结为同路径本身。当前应优先核查 Batch 重试配置、无持久化 checkpoint 与幂等缺口。
+
 ## 范围及源码
 
 - [`UploadGatewayLogs.psm1`](https://github.com/ZeonZheng/fabric-toolbox/blob/docs/gateway-monitoring-poc-20261112/monitoring/fabric-platform-monitoring/gateway/PowerShellScript/modules/UploadGatewayLogs.psm1)
