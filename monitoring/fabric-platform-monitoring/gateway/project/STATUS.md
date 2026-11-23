@@ -1,17 +1,17 @@
 # Gateway Monitoring｜当前状态
 
-> **更新时间：** 2026-11-23（Asia/Singapore）｜**阶段：** P1 必需指标验收（Mashup 三字段已明确延期）｜**POC：** 单节点｜**PROD：** 未批准
+> **更新时间：** 2026-11-23（Asia/Singapore）｜**阶段：** P2 Collector Reliability（P1 必需 Parser 功能验收已通过）｜**POC：** 单节点｜**PROD：** 未批准
 
 | 工作项 | 当前结论 | 关键证据 / 限制 |
 | --- | --- | --- |
 | Gateway → Fabric → Report | **功能 POC 通过** | 曾观察到八类 Report Raw 连续出现，但未验证文件级不丢失、不重复 |
 | QueryStreamingReport | **已部署，POC 功能 Passed** | 32/32 新 Parsed 两个 Duration 非空且与 Raw 数值一致，0 mismatch |
 | QueryExecutionAggregationReport | **已部署，POC 功能 Passed** | Raw/Parsed 新样本各 7 行，组合 Key 2/2 对照、六项有值指标 0 mismatch；非 7/7 逐行对账 |
-| **MashupEvaluationReport** | **POC Candidate 已部署；首轮 Postcheck INCONCLUSIVE（0 新 Raw）** | 02:47–02:50 UTC 检查：Live Body 与 Candidate 精确匹配（SHA256 7f333c39…2813），Policy Enabled/Transactional；Patch 后 Raw=0、Parsed=0、Policy failures 0 observed。尚不能验证五字段真实摄入，不算 P1 功能 Passed |
+| **MashupEvaluationReport** | **POC 功能 Passed（2026-11-23 11:06–11:08 SGT）** | 新 Raw 2 Envelope / 4 行、Parsed 4 行，五项 Memory/Time 都是 4/4 非空，KeyCheck 4/4、0 签名差异、0 unmatched；Policy failures 0 observed。样本小，非文件级无丢失保证 |
 | Mashup 数组形状/类型 | **2026-11-23 只读诊断完成** | 新 Raw 36 行；TotalBytes 44/44、TotalRows 35/35 个数组元素均可转 long；两数组共同存在 6/6 行长度相等；MaxIO 12/14 有小数 |
 | Mashup 三个非必需字段 | **范围已决定：Deferred（GW-009）** | 元素语义/聚合规则未验证、MaxIO 的 long 与小数冲突；未来有实际需求时才重新评估，不影响其余必需字段验收 |
 | **当前版本化 Report / Semantic Model 消费** | **未见对三个问题字段的直接引用** | 检查 GitHub Fabric Report JSON、可读 Semantic Model TMDL、KQL Dashboard JSON；**不证明已部署资产/二进制 PBIT/其他下游完全无依赖** |
-| GitHub 正式 KQL Schema | **仅 Streaming + Aggregation 已同步** | **POC Live Mashup 已是新 Function**，但 fork 正式 DatabaseSchema.kql 中的 Mashup 仍旧版；待新数据 Postcheck PASS 后同步。Parsed Schema、Policy、Uploader、PROD 未改 |
+| GitHub 正式 KQL Schema | **Streaming + Aggregation + Mashup 三个修复均已同步** | 仅已验证的三段 Parser Function 同步至 fork 正式 DatabaseSchema.kql；Mashup 对应 commit f4304485。Parsed Schema、Policy、Uploader、PROD 无本次变更 |
 | 历史回填与 PROD 可靠性 | **未验收** | 历史 null、Uploader Manifest、重试幂等、Retention、Multi-Node、长期稳定性仍开放 |
 
 ## 2026-11-23 最新证据
@@ -43,12 +43,19 @@
 - PatchUTC `2026-11-23T02:39:15.4152749Z` 之后 **Raw 0 / Parsed 0，Keycheck `INCONCLUSIVE_NO_NEW_RAW`**；观察到相关 Policy Failure 0，但这不是成功摄入/无上传故障的证明。最新 Mashup Raw Envelope 发生在部署前约 13.2h。见 [独立评审](evidence/2026-11-23/MASHUP_POSTCHECK_1045_REVIEW.md)。
 - 本轮仅本地 AI **只读查询**；不回滚、不再次运行 Candidate、不将 Mashup 标记 POC Passed、不更新正式 `DatabaseSchema.kql`。
 
+## 2026-11-23 11:06–11:08 SGT Mashup Postcheck 功能验收 PASS
+
+- 用户本地 Eventhouse MCP 只读报告：13 Gate `READY_FOR_POSTCHECK`、Mashup 新 Raw **2 Envelope / 4 Records**、其他 Report 18 Envelope；10 Summary Raw/Parsed 各 **4 行**，五项必需 Memory/Time 指标两层均 **4/4 非空**；11 KeyCheck **RawRows=4、ParsedRows=4、DifferingGroups=0、UnmatchedRows=0、PASS**；12 Policy failures **0 observed**。
+- 前一轮现场 Function Body 与 Candidate 严格匹配、Policy Enabled/Transactional。**当前样本的 Mashup POC 功能通过**；和早先 Streaming、Aggregation 的功能 PASS 合计，P1 已定义三项 Parser 验收范围完成。见 [独立评审](evidence/2026-11-23/MASHUP_POSTCHECK_PASS_1105_REVIEW.md)。
+- 已将 Mashup 已验证 Function 同步 fork 正式 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`（commit `f4304485`）；没有对现场 Eventhouse 再执行任何 DDL。历史 Parsed null 不回填，GW-009 三个指标仍 Deferred。
+- **注意：** 4 条 Mashup 样本不能证明长期采集、源 CSV 至 Raw 的无遗漏或 Exactly-once；GW-002、GW-003、GW-004 等依然开放。
+
 ## 当前唯一下一步
 
-**只读检查部署后是否出现新 Mashup Raw**：使用 [13-mashup-postdeploy-activity-gate.kql](kql/poc-parser-fix-20261117/controlled-rollout/13-mashup-postdeploy-activity-gate.kql)，PatchUtc 保持 `2026-11-23T02:39:15.4152749Z`。仅当 `MashupRawRecords>0` 后，复跑一次 [10/11/12 Postcheck](kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md)。若持续无新 Mashup 但其它 Report 活动正常，先验证真实源端产生日志频率，不反复跑零样本全套检查。**可并行准备 P2 Collector Reliability（GW-002）**，不需要因为 Mashup 0 新记录停滞；但 P1 仍 Pending。不要在没有新样本的情况下推断解析已成功。
+**启动 P2 Collector Reliability 的“只读 Baseline”**：核查当前 PowerShell Uploader 的 Move→Temp→Batch→History、失败重试与 Source 文件记录可追踪性；结合可用的 VM 只读状态与 Eventhouse 只读聚合判断是否能做文件/批次/记录的端到端对账，并先明确证据缺口。**第一轮不模拟故障、不改 Scheduler/Config/日志、不动 PROD**。基线报告完成后再确定 GW-002 下一项最小测试。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
-- **现场边界：** 2026-11-23 用户已在 **POC** 手工更新 Mashup Live Function；其后 Postcheck 全程只读。Parsed Schema、Update Policy、Uploader、PROD 均无本次修改。
+- **现场边界：** 2026-11-23 用户仅在 **POC** 手工更新过 Mashup Live Function；随后 Postcheck 全程只读。本轮将已验证逻辑同步至 GitHub 正式 KQL 源码；Parsed Schema、Update Policy、Uploader、PROD 均无本次修改。
 
 [问题台账](tracking/ISSUES.md) · [进展记录](tracking/CHANGELOG.md) · [设计决定](docs/MASHUP_DESIGN_OPTIONS.md)。
