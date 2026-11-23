@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — V2 Enhanced PBIR 工程候选：五页 158 Visual 内容生成
+
+- 用户确认设计方向后，进一步生成 **Python Build 工具和完整五页 PBIR 内容候选**：Overview 39、Gateway Health 29、Query Performance 34、Failures & Diagnostics 28、Job Detail 28，合计 158 个 Visual JSON（包含装饰 Shape/TextBox），附先前设计规范与概览预览打包 ZIP 供当次会话下载。
+- 基于官方 PBIR 角色文档编写字段绑定，严格复用现有 TMDL 名称；校正 `# Nodes` 的实际业务含义与 Query P90 的秒单位；无敏感 QueryText 视觉绑定。
+- Python 编译、JSON/字段/布局/唯一 ID、ZIP 完整性检查均 PASS。**CLI Scaffold/Validate 未运行（npm DNS 不通），Power BI Desktop 打开、真实 Semantic Model/Dynamic M/Drillthrough/截图尚未验证，不能称已完成可发布 PBIP。** 源码生成器随会话 ZIP 交付，未进入 GitHub 源码树；详细边界见 [工程交付记录](../docs/GATEWAY_REPORT_V2_ENGINEERING_HANDOFF_20261123.md)。
+- GW-011 继续 Open，下一关口是由本地执行器仅运行官方 Scaffold+Validate 并回传日志，ChatGPT 负责技术分析与后续补丁；**无 Fabric/VM/PROD 变更**。
+
 ## 2026-11-23 — Gateway Monitoring V2：五页交互设计原型及字段合同完成
 
 - 由 ChatGPT 从版本化原 Report `report.json` / Model TMDL 以及 KQL 函数直接审计设计：完成 **5 页 HTML UI Prototype**（Overview、Gateway Health、Query Performance、Failures & Diagnostics、Job Detail）及相同 5 页可编辑 Draw.io 线框图。HTML 自带明确 DEMO DATA 标识，数值和 Node/Errors 皆为虚构样本。浏览器逐页及筛选测试通过（无 JS 错误），输出 Overview 截图/整包供用户预览。
