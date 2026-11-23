@@ -2,6 +2,14 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 11:06–11:08（UTC+8）— Mashup 新数据功能回归 PASS，P1 本轮验收完成
+
+- 用户提交本地 Eventhouse Remote MCP 的只读 PASS 报告：Gate 13 新 Mashup **2 Envelope / 4 Records**（其他 Report 18 Envelope）；Query 10 Raw/Parsed 各 **4 行**，五项 Memory/Time 指标全部 **4/4 非空**；Query 11 多重签名 `RawRows=4`、`ParsedRows=4`、`DifferingGroups=0`、`UnmatchedRows=0`、`PASS`；Query 12 Patch 后 Update Policy Failures **0 observed**。无查询错误。真实 PatchUTC `2026-11-23T02:39:15.4152749Z`。
+- 前一轮 10:45 SGT 已证明 POC Live Function Body 与 P1 Candidate 精确一致（SHA256 `7f333c39…2813`）、Update Policy Enabled/Transactional；本轮未重复采集 SHA。独立评审认定 **当前样本的 Mashup Parser POC 功能 PASS**，见 [证据](../evidence/2026-11-23/MASHUP_POSTCHECK_PASS_1105_REVIEW.md)。
+- **Streaming、Aggregation、Mashup 三组 P1 必需 Parser 功能性 POC 验证全部通过**，GW-001 在**既定范围**内 Closed；GW-009 三个不必需字段继续 Deferred，历史 null 未回填。样本小，不声称长期完整性、零丢失或 Exactly-once。
+- 已将 Mashup 已验证 Function Body **仅在 fork 工作分支**同步正式 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`（commit `f430448595e65fae890a142969bfcea26ce4eea2`）；没有再次改 Eventhouse Live、Table Schema、Policy、Uploader 或 PROD。
+- **下一阶段 P2 Collector Reliability（GW-002）**：先做源码 + 现场可用证据的只读 Baseline，再决定风险优先级与安全测试方案。
+
 ## 2026-11-23 10:47–10:50（UTC+8）— Mashup 首轮 Postcheck INCONCLUSIVE（新 Raw 0）
 
 - 用户上传本地 Eventhouse Remote MCP 只读回归报告 `gateway-mashup-postcheck-20261123-1045-SGT.md`。部署后真实起点 `2026-11-23T02:39:15.4152749Z`；Live Mashup Function 与 Candidate Body 精确匹配（SHA256 `7f333c39791810d52531b3340cbbce0ffb998d2925f0f0a1d594edf8e82813`），Policy 仍 Enabled / Source Raw / Transactional。
