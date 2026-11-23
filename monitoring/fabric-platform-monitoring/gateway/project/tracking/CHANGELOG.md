@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — Mashup POC Candidate 已手工应用，Postcheck 待执行
+
+- 用户确认已在 Gateway Monitoring **POC** 手工运行 Mashup Candidate；随后记录 `RecordedAfterPatchUTC=2026-11-23T02:39:15.4152749Z`，并上传 `export (13).csv`（Function 导出）。导出 Body 显示显式 `mv-expand + project` 及五个修复字段映射，Folder 为 `UpdatePolicyFunctions`，详见 [部署摘要](../evidence/2026-11-23/MASHUP_MANUAL_DEPLOYMENT_20261123.md)。
+- **这不是部署后的功能验收**：新 Raw/Parsed 五项数值、Patch 后 Policy failures、现场 Policy 的 Postcheck 尚无结果。已准备 [Runbook](../kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md) 及只读 10/11/12 KQL，本地 MCP 将以真实 Patch UTC 执行。
+- 暂不将 Mashup 标记 Passed、不关闭 GW-001、不修改 fork 正式 `DatabaseSchema.kql`；GW-009 Deferred、PROD 边界保持不变。
+
 ## 2026-11-23 — Mashup 12 列兼容性 Gate PASS，进入 POC 手工部署阶段
 
 - 用户返回本地 Eventhouse Remote MCP 原文只读执行结果：`LegacyRows=36`、`CandidateRows=36`、`DifferingSignatureGroups=0`、`UnmatchedRows=0`、`Result=PASS`、无错误；**12 个非目标列**的多重值签名匹配，见 [证据](../evidence/2026-11-23/MASHUP_LEGACY_CANDIDATE_COMPATIBILITY_PASS.md)。
