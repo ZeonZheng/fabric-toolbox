@@ -50,9 +50,15 @@
 - 已将 Mashup 已验证 Function 同步 fork 正式 `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql`（commit `f4304485`）；没有对现场 Eventhouse 再执行任何 DDL。历史 Parsed null 不回填，GW-009 三个指标仍 Deferred。
 - **注意：** 4 条 Mashup 样本不能证明长期采集、源 CSV 至 Raw 的无遗漏或 Exactly-once；GW-002、GW-003、GW-004 等依然开放。
 
+## 2026-11-23 P2 Uploader 可靠性源码审计
+
+- 已由 ChatGPT **直接读取并分析 GitHub 源码**（不是交给本地 AI 判定）：`UploadGatewayLogs.psm1`、`Utils.psm1`、`Run-UploadGatewayLogs.ps1`。
+- **最高优先级的疑似缺陷：** Report 递归扫描可能再次选中 Temp；已在 Temp 的文件对自身 `Move-Item`；`fileReady=false` 不能阻止后续 Merge/删除路径。真实 PowerShell 行为和是否造成记录丢失仍需受控测试。其他风险包括 Batch 无持久化 checkpoint、重试重复和只依据 HTTP 确认本地归档。
+- 完整 [源码独立评审](evidence/2026-11-23/UPLOADER_SOURCE_RELIABILITY_REVIEW.md)，这是 **代码路径分析，不是已观察的故障**。
+
 ## 当前唯一下一步
 
-**启动 P2 Collector Reliability 的“只读 Baseline”**：核查当前 PowerShell Uploader 的 Move→Temp→Batch→History、失败重试与 Source 文件记录可追踪性；结合可用的 VM 只读状态与 Eventhouse 只读聚合判断是否能做文件/批次/记录的端到端对账，并先明确证据缺口。**第一轮不模拟故障、不改 Scheduler/Config/日志、不动 PROD**。基线报告完成后再确定 GW-002 下一项最小测试。
+**获取一次 POC Gateway VM 只读环境快照**：核实 Scheduled Task Action/LastRunResult、PowerShell 版本、Report/Temp/History 文件计数/大小/时间戳及近期上传错误的数量与分类（不读取原始敏感 CSV 内容）。收集到现场数据后由 ChatGPT 判断下一项受控实验。**本地 AI 只承担数据收集、不承担源码风险判断；没有 VM 访问能力时明确说明，不要猜测。** 不修改 Task/Config/Log、不给 PROD 施加影响。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
