@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — P2 Collector Reliability：ChatGPT 直接完成源码风险评审
+
+- 直接读取 fork 工作分支 `UploadGatewayLogs.psm1`、`Utils.psm1`、`Run-UploadGatewayLogs.ps1`，完成 [独立评审](../evidence/2026-11-23/UPLOADER_SOURCE_RELIABILITY_REVIEW.md)。此轮**无须本地 AI 分析源码**、未触及 POC VM / Eventhouse / PROD。
+- **关键代码路径风险：** Report 递归扫描含 Temp、已在 Temp 的文件仍对同一路径 Move、`fileReady=false` 并不阻止 Merge，可能引发未确认上传的归档/清理（尚未实测）；Batch 没有持久化进度与稳定去重；本地 HTTP 成功也不是端到端持久化确认。另发现实际 HTTP 重试入参取 `$config.ConnectionProperties`，而 UploadGatewayLogs 内创建的默认配置是另一个局部变量，需只读核对配置。
+- 下一步收集一次 POC VM Task 与 Report/Temp/History 的**只读元数据**，再由 ChatGPT 决定受控故障实验，不把分析/决策外包给本地 AI。
+
 ## 2026-11-23 11:06–11:08（UTC+8）— Mashup 新数据功能回归 PASS，P1 本轮验收完成
 
 - 用户提交本地 Eventhouse Remote MCP 的只读 PASS 报告：Gate 13 新 Mashup **2 Envelope / 4 Records**（其他 Report 18 Envelope）；Query 10 Raw/Parsed 各 **4 行**，五项 Memory/Time 指标全部 **4/4 非空**；Query 11 多重签名 `RawRows=4`、`ParsedRows=4`、`DifferingGroups=0`、`UnmatchedRows=0`、`PASS`；Query 12 Patch 后 Update Policy Failures **0 observed**。无查询错误。真实 PatchUTC `2026-11-23T02:39:15.4152749Z`。
