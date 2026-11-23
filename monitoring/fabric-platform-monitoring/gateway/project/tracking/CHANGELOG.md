@@ -1,3 +1,13 @@
+# 项目进展时间线
+
+> 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
+
+## 2026-11-23 — P2-T2 离线模拟验证部分 Batch 失败后重复发送
+
+- 用户在 POC VM PowerShell 7.6.10，以 `$env:TEMP` 合成 CSV 和内存 Mock 发件函数运行实际 `Utils.psm1` 的 `Add-LogToEventHub`：合成 2,001 行，两批（2,000 + 1）；首次第一批接受、第二批抛出 `SIMULATED_BATCH_2_FAILURE`；下轮同文件从第一行重传。
+- 输出 `AcceptedBatchCount=3`、`FirstBatchCopies=2`、`DuplicateBatchObserved=True`；在 Mock 端累计接受 4,001 行，其中 2,000 为重复发送。**证明现有应用逻辑在模拟部分失败下存在重复发送风险；没有真实网络请求或 Eventhouse 重复摄入证明。** 见 [P2-T2 证据](../evidence/2026-11-23/GW002_T2_OFFLINE_PARTIAL_BATCH_FAILURE_PASS.md)。
+- GW-002 保持 Open；源端文件丢失/轮转与端到端 Raw/Parsed 对账仍未完成。下一步由 ChatGPT 独立定义稳定 Batch/Record ID、重试语义、去重与 Manifest 最小方案，**不重复同类模拟、不改 PROD**。
+
 ## 2026-11-23 — P2 HTTP Retry 现场配置确认（3 次 / 1 秒）
 
 - 用户只读取得 `D:\Ang\FabricGatewayMonitoring\configs\Config.live-poc.json` 的非敏感字段：`ConnectionProperties` 存在，`MaximumRetryCount=3`、`RetryIntervalSec=1`，匹配 `Utils.psm1` 的 `Invoke-RestMethod` 参照路径。此前关于顶层 Retry 属性可能不存在的疑问对本 POC 已排除。
@@ -22,9 +32,7 @@
 - **独立审查补充限制：** 快照只枚举顶层而 Uploader 真正 `-Recurse` 扫描；0 不代表所有子目录没有 Temp。Task 正在运行不等于长期无丢失或无错误。见 [快照证据](../evidence/2026-11-23/GW002_VM_READONLY_SNAPSHOT_20261123.md)。
 - 下一步仅补做短小递归只读目录汇总与 Task Action 脱敏检查，确认现场后由 ChatGPT 定义受控测试；没有执行故障注入或写入。
 
-# 项目进展时间线
 
-> 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
 ## 2026-11-23 — P2 Collector Reliability：ChatGPT 直接完成源码风险评审
 
