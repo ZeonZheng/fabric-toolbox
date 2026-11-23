@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — Mashup 12 列兼容性 Gate PASS，进入 POC 手工部署阶段
+
+- 用户返回本地 Eventhouse Remote MCP 原文只读执行结果：`LegacyRows=36`、`CandidateRows=36`、`DifferingSignatureGroups=0`、`UnmatchedRows=0`、`Result=PASS`、无错误；**12 个非目标列**的多重值签名匹配，见 [证据](../evidence/2026-11-23/MASHUP_LEGACY_CANDIDATE_COMPATIBILITY_PASS.md)。
+- 加上之前五项目标字段 Dry-run 与 Schema 17/17，**POC 单函数部署前 Gate 通过**。另建 [P1-only Mashup Candidate](../kql/poc-parser-fix-20261117/candidates/4-parse_MashupEvaluationReport_P1_minimal_POC.kql)（逻辑不变，保留历史 Blocked 文件作审计）、复核现有回滚脚本，新增 [Mashup 受控 Runbook](../kql/poc-parser-fix-20261117/controlled-rollout/MASHUP_RUNBOOK.md) 与三份只读 Postcheck KQL（10/11/12）。
+- **截至该记录：尚未执行任何 Mashup DDL**；Live Function / Schema / Update Policy / Uploader / PROD 无修改。下一步仅由用户在已确认的 POC 手工部署，然后本地 MCP 只读验收新数据；无新数据时判 Inconclusive。GW-009 Deferred 不变。
+
 ## 2026-11-23 — Mashup 最小 Precheck：五个字段 Dry-run 通过，12 列兼容性待验证
 
 - 用户上传本地 Eventhouse MCP 报告 `gateway-mashup-minimal-precheck-20261123.md`：现场旧 Mashup Function / Transactional Update Policy 无漂移；最近 Raw 15 Envelope / 36 行；Memory 四字段 33/33、ProcessorTime 36/36 全部无转换损失；Candidate Schema 17/17 匹配。**现场未执行任何 DDL**。
