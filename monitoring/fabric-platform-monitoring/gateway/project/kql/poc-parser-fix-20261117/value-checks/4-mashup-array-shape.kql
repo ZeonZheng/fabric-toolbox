@@ -1,4 +1,4 @@
-// 只读统计；不输出业务标识、DataSource、数组原值。未在用户 POC 引擎实际验证。
+// 只读统计；不输出业务标识、DataSource、数组原值。2026-11-23：原版 floor(IO) 语义错误，经本地 AI 最小修正 floor(IO,1.0) 在 POC 成功运行。
 ['GatewayReports-Raw']
 | where logType == "MashupEvaluationReport"
 | mv-expand record=log
@@ -21,6 +21,6 @@
     SameLengthsWhenBoth=countif(BLen>0 and RLen>0 and BLen==RLen),
     MaxIOPresent=countif(isnotempty(IOText)),
     MaxIODoubleConvertible=countif(isnotnull(IO)),
-    MaxIOFractional=countif(isnotnull(IO) and abs(IO-floor(IO))>0.000000001),
+    MaxIOFractional=countif(isnotnull(IO) and abs(IO-floor(IO, 1.0))>0.000000001),
     MaxIONegative=countif(isnotnull(IO) and IO<0),
     MaxIONonFinite=countif(isnotnull(IO) and not(isfinite(IO)))
