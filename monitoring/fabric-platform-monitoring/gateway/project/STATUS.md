@@ -73,9 +73,14 @@
 - 说明**同路径 Move 本身在当前环境不会触发失败**，我此前将其列为最优先可触发故障的假设不成立，应下调该具体风险优先级。源码中 Move 因其他原因失败后 `fileReady=false` 仍无法阻止 Merge 的分支仍存在，但不能凭本次结果证明有数据丢失。见 [P2-T1 实测](evidence/2026-11-23/GW002_T1_SAME_PATH_MOVE_RESULT.md)。
 - **Collector Reliability 未验收**；下一步聚焦 HTTP Batch 失败后无持久化进度/幂等机制的风险，先核对 POC 实际 Retry 配置，不反复做同路径 Move 测试。
 
+## 2026-11-23 POC Retry 配置已核实
+
+- 用户在 VM 上只读确认 `Config.live-poc.json`：`ConfigFound=True`、`RetryConfigExists=True`、`MaximumRetryCount=3`、`RetryIntervalSec=1`；对应 `Utils.psm1:362–369` 的 HTTP 请求参数。原先怀疑配置缺失的风险**在本 POC 已排除**。见 [Retry 配置评审](evidence/2026-11-23/GW002_HTTP_RETRY_CONFIG_REVIEW_20261123.md)。
+- PowerShell 自动重试是 HTTP 400–599/304 响应级重试（429 的 Retry-After 可能覆盖配置），**不是 Batch 进度 checkpoint 或端到端幂等机制**。核心未验证风险是已成功 Batch 在后续失败后整文件重传导致重复；不需再检查或调整 3/1 配置。
+
 ## 当前唯一下一步
 
-**只读检查 live-poc HTTP Retry 配置**：在已确认 POC VM，仅提取 `Config.live-poc.json` 下 `ConnectionProperties` 是否存在、`MaximumRetryCount` 与 `RetryIntervalSec` 的数值；不显示完整配置/密钥。由 ChatGPT 据此设计下一项隔离 HTTP 部分 Batch 失败测试；不触发真实上传、改 Task 或操作 PROD。
+**P2-T2 — 隔离 Batch Partial Failure 测试**：以模拟 CSV 数据和内存 Mock 发送函数验证原有 `Add-LogToEventHub` 分批逻辑在第一批成功、第二批失败、重新处理文件时是否重发第一批。只在合成数据/临时目录运行；不得调用真实 `Add-MsgEventHub` 网络实现、修改 Gateway Report/Temp/History、Scheduler/Config 或 PROD。由 ChatGPT 对结果独立评审，不再让本地 AI 决定风险。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
