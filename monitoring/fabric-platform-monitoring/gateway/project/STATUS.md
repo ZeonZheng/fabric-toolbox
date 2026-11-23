@@ -7,7 +7,7 @@
 | Gateway → Fabric → Report | **功能 POC 通过** | 曾观察到八类 Report Raw 连续出现，但未验证文件级不丢失、不重复 |
 | QueryStreamingReport | **已部署，POC 功能 Passed** | 32/32 新 Parsed 两个 Duration 非空且与 Raw 数值一致，0 mismatch |
 | QueryExecutionAggregationReport | **已部署，POC 功能 Passed** | Raw/Parsed 新样本各 7 行，组合 Key 2/2 对照、六项有值指标 0 mismatch；非 7/7 逐行对账 |
-| **MashupEvaluationReport** | **原 Candidate 未部署、仍 Blocked；必需字段尚待验收** | 三个问题字段（TotalBytes/TotalRows/MaxIO）按 ADR-009 转 GW-009 Deferred，不作为当前 P1 阻塞；其当前 null 仍是已知缺陷 |
+| **MashupEvaluationReport** | **最小五字段 Precheck Passed（按本地 AI 报告）；部署 Gate 尚未完成** | 最新 Raw 36 条，四个 Memory 字段各 33/33、ProcessorTime 36/36 转换无损失；Schema 17/17。原 Candidate/Live Function 未部署，非目标 12 列兼容性仍待验证 |
 | Mashup 数组形状/类型 | **2026-11-23 只读诊断完成** | 新 Raw 36 行；TotalBytes 44/44、TotalRows 35/35 个数组元素均可转 long；两数组共同存在 6/6 行长度相等；MaxIO 12/14 有小数 |
 | Mashup 三个非必需字段 | **范围已决定：Deferred（GW-009）** | 元素语义/聚合规则未验证、MaxIO 的 long 与小数冲突；未来有实际需求时才重新评估，不影响其余必需字段验收 |
 | **当前版本化 Report / Semantic Model 消费** | **未见对三个问题字段的直接引用** | 检查 GitHub Fabric Report JSON、可读 Semantic Model TMDL、KQL Dashboard JSON；**不证明已部署资产/二进制 PBIT/其他下游完全无依赖** |
@@ -21,9 +21,16 @@
 - MaxIO 14 个值中 12 个包含小数；Kusto `real` 可承载浮点数，但**不是保证任意十进制值精确无损**。
 - 本地 AI 的 Github Code Search 返回零不能证明无相关项目源码；检查仓库下的 Fabric Report/SM/Dashboard 可读文件未发现问题字段的**直接**消费。
 
+## 2026-11-23 Mashup 最小 Precheck 新证据
+
+- 用户提交本地 MCP 只读报告：五个目标 Memory/Time 指标（4 × 33/33、1 × 36/36）ConversionLoss 0、ChangedByCast 0，目标 Schema 17/17；当前 Live Function 仍旧版，Update Policy 仍 Transactional。参见 [独立评审](evidence/2026-11-23/MASHUP_MINIMAL_PRECHECK_REVIEW.md)。
+- v2 Candidate 的函数体**与旧 Blocked Candidate 完全相同**，区别在三个非必需指标明确延期（GW-009）；**未完成其他 12 列逐值兼容性检查**，不能仅凭五字段成绩批准手工 DDL。
+
 ## 当前唯一下一步
 
-**核查剩余必需的 Mashup 指标在 POC 新 Raw/Parsed 中是否正确**（如 Memory/Time/CPU/IO）；如果现有 Function 已满足需求，不为三个已延期字段继续修改它；如果必需字段仍有缺陷，再准备最小 Candidate 并完整 Dry-run / Schema / 回归。**原 Mashup Candidate 仍禁止部署。**
+**让本地 Eventhouse MCP 只读运行 [Mashup 旧版 vs Candidate 12 列兼容性 Gate](kql/poc-parser-fix-20261117/value-checks/7-mashup-legacy-candidate-compatibility.kql)**。须有新 Raw 样本、旧/新行数一致、12 列值签名多重集零差异；无样本或查询失败不算通过。报告交回 ChatGPT 独立复核后，再决定是否准备 POC 受控部署。
+
+**旧 Mashup Candidate 和本地报告中的 DDL 当前均不得执行。**
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
