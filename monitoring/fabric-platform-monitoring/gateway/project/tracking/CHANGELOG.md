@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 10:47–10:50（UTC+8）— Mashup 首轮 Postcheck INCONCLUSIVE（新 Raw 0）
+
+- 用户上传本地 Eventhouse Remote MCP 只读回归报告 `gateway-mashup-postcheck-20261123-1045-SGT.md`。部署后真实起点 `2026-11-23T02:39:15.4152749Z`；Live Mashup Function 与 Candidate Body 精确匹配（SHA256 `7f333c39791810d52531b3340cbbce0ffb998d2925f0f0a1d594edf8e82813`），Policy 仍 Enabled / Source Raw / Transactional。
+- Query 10 **Raw 0 / Parsed 0**；Query 11 `INCONCLUSIVE_NO_NEW_RAW`；Query 12 0 observed Policy failures。最新 Mashup Raw Envelope 为 `2026-11-22T13:35:13Z`，早于部署约 13.2h。**Policy failures 0 不意味着新数据成功摄入，因为没有新 Raw**。
+- [独立评审](../evidence/2026-11-23/MASHUP_POSTCHECK_1045_REVIEW.md) 维持 Mashup 功能验收 Pending；没有回滚、不改正式 Schema。新增轻量只读 [13 Mashup Activity Gate](../kql/poc-parser-fix-20261117/controlled-rollout/13-mashup-postdeploy-activity-gate.kql)；**先验证有新 Mashup Raw，再执行 10/11/12**，避免重复零样本检查。
+- 可并行准备 P2 Collector Reliability（GW-002）；GW-001 未关闭，GW-009 Deferred 保持不变，不动 PROD。
+
 ## 2026-11-23 — Mashup POC Candidate 已手工应用，Postcheck 待执行
 
 - 用户确认已在 Gateway Monitoring **POC** 手工运行 Mashup Candidate；随后记录 `RecordedAfterPatchUTC=2026-11-23T02:39:15.4152749Z`，并上传 `export (13).csv`（Function 导出）。导出 Body 显示显式 `mv-expand + project` 及五个修复字段映射，Folder 为 `UpdatePolicyFunctions`，详见 [部署摘要](../evidence/2026-11-23/MASHUP_MANUAL_DEPLOYMENT_20261123.md)。
