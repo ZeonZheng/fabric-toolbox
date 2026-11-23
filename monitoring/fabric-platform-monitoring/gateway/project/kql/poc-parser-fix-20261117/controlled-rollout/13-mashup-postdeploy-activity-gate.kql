@@ -1,0 +1,17 @@
+// READ ONLY. Replace PatchUtc with actual post-deployment recorded UTC.
+// This gate ONLY decides whether to run full postcheck 10/11/12.
+// Zero Mashup rows = NO_NEW_RAW, not a Parser failure.
+// Other report activity is diagnostic, not exactly-once proof.
+let PatchUtc = datetime(2099-01-01T00:00:00Z);
+['GatewayReports-Raw']
+| where logDate >= PatchUtc
+| extend RecordCount = coalesce(array_length(log), 0)
+| summarize
+    MashupEnvelopes=countif(logType == "MashupEvaluationReport"),
+    MashupRawRecords=sumif(RecordCount, logType == "MashupEvaluationReport"),
+    LatestMashupLogDate=maxif(logDate, logType == "MashupEvaluationReport"),
+    OtherReportEnvelopes=countif(logType != "MashupEvaluationReport"),
+    LatestOtherReportLogDate=maxif(logDate, logType != "MashupEvaluationReport")
+| extend Gate = iff(MashupRawRecords > 0, "READY_FOR_POSTCHECK", "NO_NEW_MASHUP_RAW")
+| project MashupEnvelopes, MashupRawRecords, LatestMashupLogDate,
+          OtherReportEnvelopes, LatestOtherReportLogDate, Gate
