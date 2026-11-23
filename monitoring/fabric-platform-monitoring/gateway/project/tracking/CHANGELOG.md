@@ -1,3 +1,9 @@
+## 2026-11-23 — P2 Gateway VM 只读运行快照（首次）
+
+- 用户在 POC VM `RNGVMC0046` 使用 PowerShell 7.6.10 执行只读快照：Task `Gateway-UploadLogs` Running / LastTaskResult `267009` (0x41301，Running)，History 顶层 **88 文件 / 24.69 MB**，8 类日志各 **11** 份；Source/Temp 顶层匹配 0，指定错误日志路径未找到。
+- **独立审查补充限制：** 快照只枚举顶层而 Uploader 真正 `-Recurse` 扫描；0 不代表所有子目录没有 Temp。Task 正在运行不等于长期无丢失或无错误。见 [快照证据](../evidence/2026-11-23/GW002_VM_READONLY_SNAPSHOT_20261123.md)。
+- 下一步仅补做短小递归只读目录汇总与 Task Action 脱敏检查，确认现场后由 ChatGPT 定义受控测试；没有执行故障注入或写入。
+
 # 项目进展时间线
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
