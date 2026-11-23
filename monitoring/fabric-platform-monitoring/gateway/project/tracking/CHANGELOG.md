@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — Gateway Monitoring V2：五页交互设计原型及字段合同完成
+
+- 由 ChatGPT 从版本化原 Report `report.json` / Model TMDL 以及 KQL 函数直接审计设计：完成 **5 页 HTML UI Prototype**（Overview、Gateway Health、Query Performance、Failures & Diagnostics、Job Detail）及相同 5 页可编辑 Draw.io 线框图。HTML 自带明确 DEMO DATA 标识，数值和 Node/Errors 皆为虚构样本。浏览器逐页及筛选测试通过（无 JS 错误），输出 Overview 截图/整包供用户预览。
+- 已提交 [字段消费/实现合同](../docs/GATEWAY_REPORT_V2_FIELD_CONTRACT.md)，明确 V2 首版优先复用已有四条查询路径、P90 Duration 单位及原始 DAX 误标，区分现有字段与待新增失败率 Measure / 错误分类需求。
+- **仍待实际构建：** 合法 Enhanced PBIR/PBIP Scaffold、模型绑定、Visual、实时 DAX/KQL 数据验收、实际页面渲染与授权部署。**不是可发布 Report；**未覆盖原版、修改 Model/Uploader/Eventhouse/PROD。
+
 ## 2026-11-23 — Gateway Monitoring Report V2 源码审计与设计立项
 
 - 直接审查 GitHub `Gateway Monitoring.Report/report.json`、同目录 Semantic Model TMDL 和 KQL Functions：**6 页、58 Visual**；现有模型的核心表为 Gateway Node Info / System Counters / Query Execution / Query Connections，对应 4 个 KQL Function。
