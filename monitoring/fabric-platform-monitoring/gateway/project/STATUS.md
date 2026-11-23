@@ -84,6 +84,13 @@
 - **技术结论：应用层重复发送风险已获受控复现；未实测 Eventstream/Eventhouse 的真实重复摄入，更不能称端到端可靠性通过。** 原始函数没有持久化 Batch Checkpoint 或稳定去重 ID；HTTP Retry=3/1 无法填补这一缺口。未触碰实际网关日志、Task、配置、Eventhouse 或 PROD。
 - T1 同路径 Move 成功、T2 部分失败重复发送已足够证明当前优先级，停止反复运行相同模拟；下一步重点转向最小幂等/对账设计与后续可验证门槛。
 
+## 2026-11-23 Report 消费审计与 V2 改版启动
+
+- 直接读取 GitHub `src/Gateway/Gateway Monitoring.Report/report.json` 和对应 Semantic Model TMDL：**6 页、58 Visual**；原版模型四个 KQL 功能来源为 `GatewayNodeStatusWithInfo`、`SystemCounters`、`QueryExecutionUnified`、`QueryConnections`。
+- **重要依赖关系：** 当前版本化模型**不直接引用** P1 新修复的 Streaming / QueryExecutionAggregation / Mashup 三表；这三项修复不会自动在原版报表新增指标。模型中的 `Query Avg. Execution ... (ms)` DAX 实际计算 P90 秒，有标签/单位不一致，需要 V2 修正。**尚未核实实际部署模型/报表与 GitHub 完全一致**；PBIT 是另一个二进制资产。
+- 用户希望重新设计一版清晰易用的 Gateway Monitoring Report；新建 [V2 字段消费/页面蓝图](docs/GATEWAY_REPORT_V2_BLUEPRINT_20261123.md)，以 5 页独立报告为候选，不覆盖现有 POC Report，模型先复用、后按必要性扩展。新增 GW-011 独立跟踪。
+- **本轮仅 GitHub 源码分析与蓝图，无 Live Semantic Model 连接、PBIP 文件生成、部署或 PROD 修改。**
+
 ## 2026-11-23 用户确认生产化优先级调整
 
 - **P1 必需 Parser 修复已验收，不等于所有字段修复**：8 类 Gateway Performance Report 已在 `GatewayReports-Raw` 观察到；标准 Parsed 未保留全部 Raw-only 字段，GW-005 / GW-009 继续跟踪；`CopyExecutionReport` 缺少实际源样本，不能宣称已通过。Gateway Basic/Verbose/Additional Logs 不包含在当前 Performance Report Eventstream 上传范围，POC Lakehouse UploadLogs=false。
