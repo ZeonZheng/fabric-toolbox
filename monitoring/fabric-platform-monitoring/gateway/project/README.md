@@ -1,17 +1,17 @@
 # Gateway Monitoring｜项目入口
 
 > **范围：** Microsoft Fabric Platform Monitoring / Gateway Monitoring；单节点 POC → 生产可行性验证。  
-> **当前阶段：** P1 — 数据解析准确性验证。**PROD 尚未获准部署。**  
+> **当前阶段：** P2 — Collector Reliability（P1 必需 Parser POC 功能已通过）。**PROD 尚未获准部署。**  
 > **最后更新：** 2026-11-23（Asia/Singapore）  
 > **工作分支：** `docs/gateway-monitoring-poc-20261112`（`main` 不修改）
 
 ## 30 秒了解项目
 
-- **P0 Functional POC 已完成：** Gateway VM → PowerShell Uploader → Eventstream → Eventhouse Raw / Parsed → Semantic Model → Power BI Report 的单节点基础功能已跑通；已观察到 8 类 Gateway Performance Reports、Heartbeat、NodeInfo。**上传端的无丢失、无重复和故障恢复尚未验证。**
-- **P1 Data Correctness 正在收尾：** Streaming Parser 与 Aggregation Parser 已部署 POC 并通过新数据回归（分别 32 条与 7 条样本）；两者已同步 fork 正式 KQL。Mashup P1 最小 Candidate **2026-11-23 已在 POC 手工部署**，现场 Body 与 Candidate 匹配、Policy Enabled/Transactional，但首轮 Postcheck 的新 Raw/Parsed **均为 0**，结论 **INCONCLUSIVE**，未获新记录功能验收。详见 [STATUS](STATUS.md) 与 [Postcheck 独立评审](evidence/2026-11-23/MASHUP_POSTCHECK_1045_REVIEW.md)。
-- **已缩小 P1 范围：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 不是当前必需指标；[ADR-009](tracking/DECISIONS.md) 已将其转为 [GW-009 Deferred](tracking/ISSUES.md)，不声称数据已修复。
-- **P2 Collector Reliability 是下一重点：** 源文件、Batch、Raw、Parsed 的完整性对账，活动文件 Move/轮转、失败重试与恢复、长时间连续运行。P3 PROD Architecture 规划中，P4 Limited PROD Pilot **尚未批准**。
-- **唯一下一步：** 有真实新 Mashup Raw 后才复跑 Postcheck 10/11/12；先用 [Activity Gate 13](kql/poc-parser-fix-20261117/controlled-rollout/13-mashup-postdeploy-activity-gate.kql) 判断。可以并行准备 P2 的可靠性测试。**PROD 尚未获准部署。**
+- **P0 Functional POC 已完成：** Gateway VM → PowerShell Uploader → Eventstream → Eventhouse Raw / Parsed → Semantic Model → Power BI Report 的单节点功能链路已跑通；已观察到 8 类 Report、Heartbeat、NodeInfo。
+- **P1 Data Correctness（本轮必需 Parser 范围）功能性 POC 已通过：** Streaming（新记录 32/32）、Aggregation（Raw/Parsed 各 7 行，复合 Key 2/2）、Mashup（2026-11-23 新 Raw/Parsed 各 4 行，五项目标 Memory/Time 指标 4/4，签名零差异）；三项修复均已在 POC 部署，**已验证逻辑同步 fork 正式 `DatabaseSchema.kql`**。见 [Mashup PASS](evidence/2026-11-23/MASHUP_POSTCHECK_PASS_1105_REVIEW.md) 和 [当前 STATUS](STATUS.md)。
+- **范围保留：** Mashup `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 已在 [ADR-009](tracking/DECISIONS.md) 确认非必需，转为 [GW-009 Deferred](tracking/ISSUES.md)，**不是已修复**；其余 Schema 覆盖缺口追踪 GW-005。
+- **P2 Collector Reliability 是当前主阶段：** 现有 Uploader 使用文件 `Move → Temp → HTTP Batch → History`；上传 HTTP 201 与 Raw/Parsed 的功能性匹配都不能证明源文件无遗漏、不重复、故障可恢复。下一步开展 **只读 Baseline**：审查采集/重试实现、可用记录级标识与 Eventhouse 证据，建立端到端可对账性与缺口清单。
+- **P3 PROD Architecture / P4 Limited PROD Pilot 尚未完成或批准**；Raw Retention、Manifest、Replay、多节点、安全治理与长期稳定性必须另行验收。
 
 ## 快速导航（以此处为准）
 
