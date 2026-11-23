@@ -53,7 +53,7 @@
 ## 2026-11-23 P2 Uploader 可靠性源码审计
 
 - 已由 ChatGPT **直接读取并分析 GitHub 源码**（不是交给本地 AI 判定）：`UploadGatewayLogs.psm1`、`Utils.psm1`、`Run-UploadGatewayLogs.ps1`。
-- **最高优先级的疑似缺陷：** Report 递归扫描可能再次选中 Temp；已在 Temp 的文件对自身 `Move-Item`；`fileReady=false` 不能阻止后续 Merge/删除路径。真实 PowerShell 行为和是否造成记录丢失仍需受控测试。其他风险包括 Batch 无持久化 checkpoint、重试重复和只依据 HTTP 确认本地归档。
+- **原始静态风险分析（已由后续 P2-T1 修正）：** Report 扫描包括 Temp、已在 Temp 的文件对自身 `Move-Item`；但 2026-11-23 P2-T1 实测同路径 Move **成功**，故“同路径必失败”假设已排除。其它真正 Move 失败时 `fileReady=false` 仍无法阻止后续 Merge；Batch 无持久化 Checkpoint、HTTP 重试重复与归档确认是当前更重要的可靠性风险。
 - 完整 [源码独立评审](evidence/2026-11-23/UPLOADER_SOURCE_RELIABILITY_REVIEW.md)，这是 **代码路径分析，不是已观察的故障**。
 
 ## 2026-11-23 POC Gateway VM 快照（用户只读执行）
@@ -67,9 +67,15 @@
 - Task Action 通过脱敏条件检查：`Run-UploadGatewayLogs.ps1` / `Config.live-poc.json` 均匹配，Working Directory 已配置。当前无可观察的 Temp 故障案例；**不意味着风险已解除**。
 - 不再重复无新信息的目录状态检查；下一步仅在隔离临时文件夹复现同路径 Move 的 PowerShell 行为。
 
+## 2026-11-23 P2-T1 单项行为实测通过（修正源码风险判断）
+
+- 用户在 POC VM PowerShell **7.6.10** 的独立 `$env:TEMP` 测试文件上，将 `Move-Item` 的 Source/Destination 均指定为同一完整路径；**Attempts=1，FileReady=True，FileStillExists=True，Error 为空**。
+- 说明**同路径 Move 本身在当前环境不会触发失败**，我此前将其列为最优先可触发故障的假设不成立，应下调该具体风险优先级。源码中 Move 因其他原因失败后 `fileReady=false` 仍无法阻止 Merge 的分支仍存在，但不能凭本次结果证明有数据丢失。见 [P2-T1 实测](evidence/2026-11-23/GW002_T1_SAME_PATH_MOVE_RESULT.md)。
+- **Collector Reliability 未验收**；下一步聚焦 HTTP Batch 失败后无持久化进度/幂等机制的风险，先核对 POC 实际 Retry 配置，不反复做同路径 Move 测试。
+
 ## 当前唯一下一步
 
-**进行 P2-T1 纯隔离 PowerShell 行为测试**：在 `$env:TEMP` 下创建一个唯一命名的虚拟 Report 文件，验证 PowerShell 7.6.10 对同一源/目的路径执行 `Move-Item -Force -PassThru` 的结果；不运行实际 Uploader 函数、任何 HTTP 或真实 Gateway Log Root。取得结果后，由 ChatGPT 决定是否需要对 `fileReady=false` 后仍 Merge 的代码路径构建 mock 单元测试。
+**只读检查 live-poc HTTP Retry 配置**：在已确认 POC VM，仅提取 `Config.live-poc.json` 下 `ConnectionProperties` 是否存在、`MaximumRetryCount` 与 `RetryIntervalSec` 的数值；不显示完整配置/密钥。由 ChatGPT 据此设计下一项隔离 HTTP 部分 Batch 失败测试；不触发真实上传、改 Task 或操作 PROD。
 
 - **范围决定：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 暂不修复、暂不额外重复统计、不联系微软；[ADR-009](tracking/DECISIONS.md) 已确认，[GW-009](tracking/ISSUES.md) 独立追踪。已知 null 不代表值为零或已修复。
 - **之后优先：** 进入 P2 Collector Reliability，验证源文件到 Parsed 的遗漏、重复、重试和轮转；PROD 仍未批准，GW-002/003/004/006/007 等风险未解除。
