@@ -2,6 +2,12 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 — PROD Pilot 目标复核与 GW-010 优先级调整
+
+- 用户明确**部分 Batch 成功后遇异常中断导致重复上传**对当前监控 Pilot 不是高优先级；保留 P2-T2 Mock 证据，将其从当前 GW-002 工作重点独立为 **GW-010 Deferred**，暂不进行全套 Batch Checkpoint/去重/Manifest 开发。此为业务优先级决定，**不代表缺陷修复或准许 PROD 部署**，见 [ADR-010](DECISIONS.md)。
+- 技术核对：8 类 Gateway Performance Report 已在 Eventhouse Raw 出现；三项 P1 关键 Parser 修复已 POC Passed；**标准 Parsed 并不覆盖全部 Raw 字段**，且 Basic/Additional Logs 没有纳入当前 Eventstream Performance Report 采集。CopyExecutionReport 当前缺源样本，不能算已验证的第九类。
+- 新增 [PROD Readiness Gap](../docs/PROD_READINESS_GAP_20261123.md)，有限 Pilot 的实际重点转为报表必需字段/页面、代表性持续采集/资源影响、节点部署和 Event-time Backfill、QueryText 安全、Raw Retention/Replay、运维告警/回滚。完整 Manifest GW-004 为非强制后续增强；P4 未批准。
+
 ## 2026-11-23 — P2-T2 离线模拟验证部分 Batch 失败后重复发送
 
 - 用户在 POC VM PowerShell 7.6.10，以 `$env:TEMP` 合成 CSV 和内存 Mock 发件函数运行实际 `Utils.psm1` 的 `Add-LogToEventHub`：合成 2,001 行，两批（2,000 + 1）；首次第一批接受、第二批抛出 `SIMULATED_BATCH_2_FAILURE`；下轮同文件从第一行重传。
