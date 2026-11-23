@@ -1,0 +1,43 @@
+// READ ONLY. Replace PatchUtc with the actual recorded UTC after manual POC DDL.
+// Compare MULTISETS of (record keys + all five target metrics) across Raw and Parsed,
+// preserving duplicate counts. Only aggregate diagnostics leave Eventhouse.
+// Raw.logDate and Parsed.ingestion_time() are different clocks; in-flight data
+// can cause a transient mismatch. 0 Raw rows = INCONCLUSIVE.
+let PatchUtc = datetime(2099-01-01T00:00:00Z);
+let RawCounts =
+    ['GatewayReports-Raw']
+    | where logType == "MashupEvaluationReport" and logDate >= PatchUtc
+    | mv-expand r = log
+    | extend Signature = hash_sha256(tostring(pack_array(
+        toguid(tostring(r.GatewayObjectId)),
+        toguid(tostring(r.QueryTrackingId)),
+        toguid(tostring(r.ConnectionId)),
+        todatetime(r.EndTimeUTC),
+        toreal(r["AverageCommit(byte)"]),
+        toreal(r["AverageWorkingSet(byte)"]),
+        tolong(r["MaxCommit(byte)"]),
+        tolong(r["MaxWorkingSet(byte)"]),
+        toreal(r["TotalProcessorTime(ms)"]) * 1ms
+    )))
+    | summarize RawN=count() by Signature;
+let ParsedCounts =
+    MashupEvaluationReport
+    | where ingestion_time() >= PatchUtc
+    | extend Signature = hash_sha256(tostring(pack_array(
+        GatewayObjectId, QueryTrackingId, ConnectionId, EndTimeUTC,
+        ['AverageCommit byte'], ['AverageWorkingSet byte'],
+        ['MaxCommit byte'], ['MaxWorkingSet byte'], TotalProcessorTime
+    )))
+    | summarize ParsedN=count() by Signature;
+RawCounts
+| join kind=fullouter ParsedCounts on Signature
+| extend RN=coalesce(RawN, 0), PN=coalesce(ParsedN, 0)
+| summarize RawRows=sum(RN), ParsedRows=sum(PN),
+            DifferingGroups=countif(RN != PN),
+            UnmatchedRows=sum(abs(RN - PN))
+| extend Result=case(
+    RawRows == 0, "INCONCLUSIVE_NO_NEW_RAW",
+    RawRows == ParsedRows and DifferingGroups == 0 and UnmatchedRows == 0, "PASS",
+    "REVIEW_WINDOW_OR_MISMATCH"
+)
+| project RawRows, ParsedRows, DifferingGroups, UnmatchedRows, Result
