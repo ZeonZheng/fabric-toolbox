@@ -12,6 +12,6 @@
 | ADR-006 | 2026-11-17 | 首轮修复尽量保持现有 Parsed Table 结构；全字段长期留存另议 | 暂定：降低 Report / Model 兼容风险 |
 | ADR-007 | 2026-11-17 | 单人项目精简管理，不设 Owner / Assignee；项目说明统一中文 | 已采纳：入口清晰、追踪可审计，保持维护成本低 |
 | ADR-008 | 2026-11-20 | 按 Streaming → Aggregation → Mashup 顺序，单个 Parser POC 受控部署 | **部分实施**：Streaming、Aggregation 已手工部署并新数据 Passed；Mashup 因类型/数组转换 Blocked，未部署 |
-| ADR-009 | 2026-11-20（2026-11-23 复核） | Mashup JSON 数组字段与 MaxIO 小数必须先确认业务必要性及语义，再选择实现范围 | **未决策：** 44/44 + 35/35 元素可转整数、共同出现数组 6/6 等长，但不证明可 SUM/FIRST；MaxIO 12/14 有小数且目标为 long；Fork Fabric Report/SM 未发现三个字段的直接引用。见 [选项](../docs/MASHUP_DESIGN_OPTIONS.md) |
+| ADR-009 | 2026-11-23（范围决定） | **采纳方案 A：** `TotalBytes`、`TotalRows`、`MaxIODataBytesPerSecond` 对当前 Gateway Monitoring POC/计划中的 PROD 监控不是必需指标，转为独立延期 Backlog（GW-009）；不阻塞当前 P1 必需指标验收 | **已采纳，仅为范围决定，非技术修复：** 三字段已知 null/数组语义及精度问题保留；不擅自 SUM/FIRST/截断，不改 Live Mashup Function、Schema、Policy 或 PROD。原 Mashup Candidate 仍 Blocked；必要字段需独立验证。未来出现实际需求时，再评估微软定义与 Schema。见 [选项](../docs/MASHUP_DESIGN_OPTIONS.md) |
 
 详细理由参见 [架构与运维](../docs/ARCHITECTURE_OPERATIONS.md)、[Parser 审计](../docs/PARSER_SCHEMA_AUDIT.md)、[Manifest 设计](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md)。
