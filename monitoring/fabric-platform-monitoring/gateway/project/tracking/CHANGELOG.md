@@ -1,3 +1,9 @@
+## 2026-11-23 — P2 HTTP Retry 现场配置确认（3 次 / 1 秒）
+
+- 用户只读取得 `D:\Ang\FabricGatewayMonitoring\configs\Config.live-poc.json` 的非敏感字段：`ConnectionProperties` 存在，`MaximumRetryCount=3`、`RetryIntervalSec=1`，匹配 `Utils.psm1` 的 `Invoke-RestMethod` 参照路径。此前关于顶层 Retry 属性可能不存在的疑问对本 POC 已排除。
+- 结合 Microsoft PowerShell 7.6 文档，确认为**HTTP 响应状态级自动重试**而非文件/Batches 的持久化 Checkpoint；不保证部分已成功 Batch 在下一轮不重发。见 [独立分析](../evidence/2026-11-23/GW002_HTTP_RETRY_CONFIG_REVIEW_20261123.md)。
+- 不更改现有 3/1 参数；下一项为完全隔离的合成数据 + Mock Batch Partial Failure 实验，禁止请求真实 Eventstream。
+
 ## 2026-11-23 — P2-T1 同路径 Move 隔离行为测试 PASS
 
 - 用户在 POC VM PowerShell `7.6.10` 使用 `$env:TEMP` 唯一虚拟文件运行测试，`Move-Item -Path <same> -Destination <same> -Force -PassThru -ErrorAction Stop` 一次成功：`Attempts=1`、`FileReady=True`、`FileStillExists=True`、`Error=""`；测试结束仅清理虚拟文件。
