@@ -2,12 +2,12 @@
 
 > **范围：** Microsoft Fabric Platform Monitoring / Gateway Monitoring；单节点 POC → 生产可行性验证。  
 > **当前阶段：** P1 — 数据解析准确性验证。**PROD 尚未获准部署。**  
-> **最后更新：** 2026-11-20（Asia/Singapore）  
+> **最后更新：** 2026-11-23（Asia/Singapore）  
 > **工作分支：** `docs/gateway-monitoring-poc-20261112`（`main` 不修改）
 
 ## 30 秒了解项目
 
-已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC 分别手工应用 Streaming 与 Aggregation 修复；**两项功能回归均通过**：Streaming 32/32 新行双指标与 Raw 匹配，Aggregation 7 条新 Raw/Parsed 行、2/2 组合 Key 的六项有值字段与 Raw 匹配，0 mismatch。两项已同步 fork 正式 KQL Schema。**Mashup 尚未部署且 Precheck Blocked**：TotalBytes、TotalRows 数组文本及 MaxIO 小数与目标标量类型不兼容；先核实数组语义/精度与 Schema 决策，不得部署旧 Candidate。上传完整性、长期稳定性与历史数据回填仍未验收。详见 [2026-11-20 两项验证](evidence/2026-11-20/README.md)。
+已验证 Gateway VM → Eventstream → Eventhouse → Semantic Model → Power BI 的功能链路。真实日志的持续上传正在观察，**尚未证明不丢失、不重复**。发现上游 KQL Parser 与实际 Gateway CSV 字段名不匹配，导致部分 Parsed Table 指标全为 null；3 组只读修复候选已恢复非空，**Schema 39/39 列已通过**、数值/时间单位 13 项当前样本无超阈值差异；DataSource 235/235 条一致。2026-11-20 本地 MCP Preflight **4/4 已通过**（3/3 Function 严格一致），2026-11-20 用户已在 POC 分别手工应用 Streaming 与 Aggregation 修复；**两项功能回归均通过**：Streaming 32/32 新行双指标与 Raw 匹配，Aggregation 7 条新 Raw/Parsed 行、2/2 组合 Key 的六项有值字段与 Raw 匹配，0 mismatch。两项已同步 fork 正式 KQL Schema。**Mashup 尚未部署且原 Candidate Blocked**：2026-11-23 Shape Follow-up 证明数组元素可以安全转 long（TotalBytes 44/44、TotalRows 35/35），但多元素数组的业务语义仍未知，MaxIO 小数与 long 不兼容。当前版本化 Fabric Report / Semantic Model 未观察到这些字段的**直接引用**，先确认实际业务消费后再决定重设计范围。详见 [Nov23 评审](evidence/2026-11-23/MASHUP_SHAPE_FOLLOWUP_REVIEW.md)。上传完整性、长期稳定性与历史数据回填仍未验收。详见 [2026-11-20 两项验证](evidence/2026-11-20/README.md)。
 
 ## 快速导航（以此处为准）
 

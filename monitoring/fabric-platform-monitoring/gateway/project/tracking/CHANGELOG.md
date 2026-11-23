@@ -2,6 +2,13 @@
 
 > 时间统一采用 **Asia/Singapore（UTC+8）**；较早的数据时间若标注 UTC 则保留原始时区。这里记录历史事件；**最新状态只看 [STATUS](../STATUS.md)**。
 
+## 2026-11-23 09:50–09:55（UTC+8）— Mashup Array/Decimal Shape 已验证，进入设计范围评审
+- 用户的本地 Eventhouse Remote MCP 按工作分支运行三份只读查询：Query 05 原文成功，Query 04/06 的 `floor(x)` 报 `bin() expects 2 arguments`，本地修为 `floor(x,1.0)` 后成功。**已把最小语法修正提交 GitHub 的只读 KQL**。
+- Raw 1 天窗口 **36 条**：TotalBytes 23 条（17 单、6 多）共 **44/44 long 可转换元素**；TotalRows 12 条（4 单、8 多）共 **35/35 long 可转换元素**；两个数组同时出现 **6/6 长度相等**，但含义与是否可以聚合仍未证实。MaxIO 14 有值，**12/14** 含小数；目标表 long 无法精确保留。
+- 独立检查 Fork 版本化 Fabric Report `report.json`、6 个业务 Semantic Model TMDL 与 KQL Dashboard JSON，**未发现** `MashupEvaluationReport` / `TotalBytes` / `TotalRows` / `MaxIODataBytesPerSecond` 的**直接文字消费**；本地 AI GitHub Code Search=0 不是资产不存在的证明。不能推断已部署报表/PBIT/其它消费者均未使用。
+- 归档 [2026-11-23 原始报告与独立评审](../evidence/2026-11-23/README.md)，新增 [Mashup 范围与设计选项](../docs/MASHUP_DESIGN_OPTIONS.md)；**Mashup Function、Candidate、Schema、Policy、PROD 均未改**，旧版 Blocked 约束不变。
+- **不再反复跑同类形状统计**；下一步先确认这三个字段对 POC/PROD 报表是否必要，若必要再向 Microsoft 询问数组元素/聚合定义，之后才决定标量规则或另建明细结构。
+
 ## 2026-11-20 16:27–16:44（UTC+8；报告结束时间元数据有差异）— Mashup Precheck Blocked
 - 本地 `eventhouse-remote` MCP **只读**检查旧版 Mashup Function / Transactional Update Policy，现场未执行 Function DDL、Schema 或 Policy 修改。59 Raw Envelope / **379 内嵌记录**，查询均执行成功（两条辅助查询先报语法错再只读修正）。
 - **三个有值字段在现有 Candidate 中全部转换失败：** TotalBytes **243/243** (`long`；Raw 为 JSON 数组字符串，212 单元素+31 多元素)、TotalRows **34/34** (`real`；14 单元素+20 多元素)、MaxIODataBytesPerSecond **127/127** (`long`；Raw 是小数字符串，`toreal` 可读)。旧 Parsed 2862 行三列均 0 非空；**不是新部署造成的回归，但现有 Candidate 也修不好**。

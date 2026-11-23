@@ -1,6 +1,6 @@
 # 技术决策记录（轻量 ADR）
 
-> 更新：2026-11-20（Asia/Singapore）。**决策 ≠ 已实现**；保留上下文和约束，不为单人项目增加复杂审批流程。
+> 更新：2026-11-23（Asia/Singapore）。**决策 ≠ 已实现**；保留上下文和约束，不为单人项目增加复杂审批流程。
 
 | ADR | 日期 | 决策 | 状态与理由 |
 | --- | --- | --- | --- |
@@ -12,6 +12,6 @@
 | ADR-006 | 2026-11-17 | 首轮修复尽量保持现有 Parsed Table 结构；全字段长期留存另议 | 暂定：降低 Report / Model 兼容风险 |
 | ADR-007 | 2026-11-17 | 单人项目精简管理，不设 Owner / Assignee；项目说明统一中文 | 已采纳：入口清晰、追踪可审计，保持维护成本低 |
 | ADR-008 | 2026-11-20 | 按 Streaming → Aggregation → Mashup 顺序，单个 Parser POC 受控部署 | **部分实施**：Streaming、Aggregation 已手工部署并新数据 Passed；Mashup 因类型/数组转换 Blocked，未部署 |
-| ADR-009 | 2026-11-20 | Mashup 的 `TotalBytes` / `TotalRows` 多值语义与 `MaxIO` 小数精度必须先验证，再决定标量聚合或 Schema 演进 | **待调研、未决策**：禁止擅自 sum/first、截断小数、直接修改目标表或部署旧 Candidate；参见 [Precheck Review](../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md) |
+| ADR-009 | 2026-11-20（2026-11-23 复核） | Mashup JSON 数组字段与 MaxIO 小数必须先确认业务必要性及语义，再选择实现范围 | **未决策：** 44/44 + 35/35 元素可转整数、共同出现数组 6/6 等长，但不证明可 SUM/FIRST；MaxIO 12/14 有小数且目标为 long；Fork Fabric Report/SM 未发现三个字段的直接引用。见 [选项](../docs/MASHUP_DESIGN_OPTIONS.md) |
 
 详细理由参见 [架构与运维](../docs/ARCHITECTURE_OPERATIONS.md)、[Parser 审计](../docs/PARSER_SCHEMA_AUDIT.md)、[Manifest 设计](../docs/PROD_UPLOAD_MANIFEST_DESIGN.md)。

@@ -67,3 +67,9 @@ Microsoft 参考：[Update Policy](https://learn.microsoft.com/en-us/kusto/manag
 
 - 本轮只读证实 `TotalBytes` 243/243、`TotalRows` 34/34 的数组文本及 `MaxIODataBytesPerSecond` 127/127 的小数文本在现行 Candidate 中均转换为 null。**原 Parsed 也已有同样缺陷，不是已部署 Candidate 的回归。**
 - 两个数组的多元素语义未知；`MaxIO` 目标表是 long 但原始有小数。保留原 Candidate **仅作缺陷复现/审计，不得执行**，也不改 fork 正式 KQL Schema。详细见 [独立评审](../../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md) 与 [只读诊断](value-checks/MASHUP_SHAPE_README.md)。
+
+
+## 2026-11-23 Mashup Shape Follow-up
+
+- 04/05/06 已在 POC 通过（04/06 KQL 的 `floor(x)` 语法错误已在 GitHub 只读版本中修为 `floor(x,1.0)`），数组元素类型转换可行，**但语义仍未知**。
+- [Nov23 独立技术评审](../../evidence/2026-11-23/MASHUP_SHAPE_FOLLOWUP_REVIEW.md) 及 [设计范围选项](../../docs/MASHUP_DESIGN_OPTIONS.md)：在业务消费和字段定义明确前不得修改、执行 `candidates/3-parse_MashupEvaluationReport.kql`，不得变更目标 Schema/Policy/PROD。

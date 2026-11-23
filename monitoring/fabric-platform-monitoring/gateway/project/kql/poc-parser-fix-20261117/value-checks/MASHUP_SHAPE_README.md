@@ -10,8 +10,8 @@
 | [5-mashup-array-length-distribution.kql](5-mashup-array-length-distribution.kql) | `TotalBytes` 与 `TotalRows` 的数组长度交叉分布（不展示原值） |
 | [6-mashup-array-element-validation.kql](6-mashup-array-element-validation.kql) | 各数组元素数值/整数转换、分数/负数/大整数统计（不展示原值） |
 
-这三份 KQL 尚未在用户的 KQL Queryset/MCP 上执行验证，**不可在 GitHub 文件创建后直接宣称通过**。统计结果无法单独证明多元素数组应求和、取首项或保留列表；需要明确业务语义与 Schema 决策。
+这三份 KQL **已在 2026-11-23 POC MCP 成功执行**，04 与 06 首次遇到 `floor()` 参数错误，经 `floor(x, 1.0)` 修正后运行成功；修复后的只读源码已同步 GitHub。**不意味着原 Candidate 获得部署许可。**统计结果无法单独证明多元素数组应求和、取首项或保留列表；需要明确业务语义与 Schema 决策。
 
 **当前阶段不修改：** 目标表、Update Policy、旧 Mashup Function、`candidates/3-parse_MashupEvaluationReport.kql` 和正式 `src/Gateway/.../DatabaseSchema.kql`。
 
-回到 [项目状态](../../../STATUS.md) · [2026-11-20 Evidence](../../../evidence/2026-11-20/README.md)。
+回到 [项目状态](../../../STATUS.md) · [2026-11-23 Evidence](../../../evidence/2026-11-23/README.md) · [设计选项](../../../docs/MASHUP_DESIGN_OPTIONS.md)。

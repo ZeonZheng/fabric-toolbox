@@ -1,29 +1,33 @@
 # Gateway Monitoring｜当前状态
 
-> **更新：** 2026-11-20 16:44（Asia/Singapore；Mashup Precheck 报告内结束时间存在 8 分钟不一致）｜**阶段：** P1 Parser 数据正确性｜**POC：** 单节点｜**PROD：** 未批准
+> **更新时间：** 2026-11-23 09:55（Asia/Singapore）｜**阶段：** P1 Parser Data Correctness 与 Mashup 设计评审｜**POC：** 单节点｜**PROD：** 未批准
 
-| 工作项 | 最新状态 | 验证事实及边界 |
+| 工作项 | 当前结论 | 关键证据 / 限制 |
 | --- | --- | --- |
-| Gateway → Fabric → Report | **功能 POC 已验证** | 八类 Report 有过持续摄入；不证明 Uploader 的文件级无丢失/无重复 |
-| **Streaming Parser** | **已部署，POC 功能回归 Passed** | 新 Parsed 32/32 两项 Duration 非空且 Raw/Parsed 数值 32/32 匹配、0 mismatch |
-| **Aggregation Parser** | **已部署，POC 功能回归 Passed** | Patch 后 Raw 2 Envelope/7 条、Parsed 7 条；2/2 唯一组合 Key 对照，六项 Raw 有值字段 0 mismatch；不是 7/7 逐行对账 |
-| **Mashup Parser** | **未部署；Precheck Blocked** | 当前 379 条 Raw：TotalBytes **243/243**、TotalRows **34/34**、MaxIODataBytesPerSecond **127/127** 非空输入经原 Candidate 转换成 null |
-| Mashup Raw 形状/语义 | **待进一步验证和设计决定** | TotalBytes JSON 数组文本 212 单元素+31 多元素；TotalRows 14+20；MaxIO 为小数字符串且目标表 long。多值如何压成单个标量、MaxIO 是否允许舍入尚无结论 |
-| Mashup 其它字段 | **部分只读验证通过** | 当前 Raw 的 5 个 Memory/Time 指标各 379/379 转换成功；AvgIO/AvgPercent/MaxPercent 样本转换成功；DataSourceKinds/Paths 原 Raw 无独立 Key |
-| 运行中 Mashup Function/Policy | **保持旧版/未变更** | Legacy `bag_unpack` Body，Policy Enabled/Source Raw/Transactional；**没有执行 Mashup DDL** |
-| Fork 正式 Schema | **仅 Streaming + Aggregation 已同步** | `src/Gateway/Gateway Monitoring.KQLDatabase/DatabaseSchema.kql` 未应用 Mashup Candidate；禁止用 Jumpstart 整体覆盖 |
-| 24h 稳定性/历史回填/PROD 可靠性 | **未验收** | 历史 Parsed null、Uploader Manifest、重试/去重、保留、Multi-Node 等均待验证 |
+| Gateway → Fabric → Report | **功能 POC 通过** | 曾观察到八类 Report Raw 连续出现，但未验证文件级不丢失、不重复 |
+| QueryStreamingReport | **已部署，POC 功能 Passed** | 32/32 新 Parsed 两个 Duration 非空且与 Raw 数值一致，0 mismatch |
+| QueryExecutionAggregationReport | **已部署，POC 功能 Passed** | Raw/Parsed 新样本各 7 行，组合 Key 2/2 对照、六项有值指标 0 mismatch；非 7/7 逐行对账 |
+| **MashupEvaluationReport** | **未部署；当前 Candidate 仍 Blocked** | 原候选三个字段全转 null：TotalBytes 243/243、TotalRows 34/34、MaxIO 127/127（2026-11-20 样本）。旧 Parsed 亦有同样 null |
+| Mashup 数组形状/类型 | **2026-11-23 只读诊断完成** | 新 Raw 36 行；TotalBytes 44/44、TotalRows 35/35 个数组元素均可转 long；两数组共同存在 6/6 行长度相等；MaxIO 12/14 有小数 |
+| Mashup 字段业务定义 | **未验证，仍是设计阻碍** | 不清楚多元素对应什么、能否 SUM/FIRST/展开；MaxIO 当前目标 long 不能准确保留小数 |
+| **当前版本化 Report / Semantic Model 消费** | **未见对三个问题字段的直接引用** | 检查 GitHub Fabric Report JSON、可读 Semantic Model TMDL、KQL Dashboard JSON；**不证明已部署资产/二进制 PBIT/其他下游完全无依赖** |
+| GitHub 正式 KQL Schema | **仅 Streaming + Aggregation 已同步** | Mashup 仍使用旧 Function；未改 Parsed Schema、Policy、Uploader 或 PROD |
+| 历史回填与 PROD 可靠性 | **未验收** | 历史 null、Uploader Manifest、重试幂等、Retention、Multi-Node、长期稳定性仍开放 |
 
-## Mashup 阻断证据（2026-11-20）
+## 2026-11-23 最新证据
 
-- 用户本地 Eventhouse Remote MCP 在 379 条 Raw 记录中观察到 TotalBytes 数组文本 243/243 `tolong` 失败、TotalRows 数组文本 34/34 `toreal` 失败、MaxIO 小数字符串 127/127 `tolong` 失败；**这些在旧 Parsed 中同样为 null，不是已执行新 Candidate 造成的回归**。
-- 旧 Parsed Mashup 2862 行，TotalBytes / TotalRows / MaxIO 三列均 0 非空；当前 Candidate 不能解决这三项。旧 Candidate 的 **17/17 Schema 检查仅证明静态兼容，不证明这些列数值正确**。
-- [用户上传的脱敏 Precheck](evidence/2026-11-20/gateway-mashup-precheck-20261120-1626-SGT.sanitized.md) · [独立技术评审](evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md)。
+- [Mashup 本地 MCP Shape Follow-up 原始脱敏报告](evidence/2026-11-23/gateway-mashup-shape-followup-20261123-0949-SGT.sanitized.md) · [独立技术评审](evidence/2026-11-23/MASHUP_SHAPE_FOLLOWUP_REVIEW.md)。3 份统计查询成功（查询 4/6 经 `floor(x,1.0)` 最小修正）；当前 GitHub 只读脚本已同步修正。
+- 36 行中 TotalBytes 23 行（17 单、6 多）、TotalRows 12 行（4 单、8 多）；同现 6 行 6/6 等长。**结构不等于业务定义**；元素整数转换成功仅说明拆分在技术上可行。
+- MaxIO 14 个值中 12 个包含小数；Kusto `real` 可承载浮点数，但**不是保证任意十进制值精确无损**。
+- 本地 AI 的 Github Code Search 返回零不能证明无相关项目源码；检查仓库下的 Fabric Report/SM/Dashboard 可读文件未发现问题字段的**直接**消费。
 
 ## 当前唯一下一步
 
-**让本地 AI + Eventhouse Remote MCP 执行 [Mashup 数组/小数语义的下一轮只读诊断](kql/poc-parser-fix-20261117/value-checks/MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)**：分析 TotalBytes/TotalRows 的元素数、数组长度关联、各元素是否可转整数、MaxIO 是否有小数/异常，并仅在可验证的官方或项目数据来源中寻找字段业务含义；以**一份完整脱敏中文 Markdown 报告**返回。**诊断期间禁止修改现有 Mashup Candidate、目标表 Schema、Update Policy 或任何现场 Function**。
+**先完成 [Mashup 字段业务必要性与实现范围评审](docs/MASHUP_DESIGN_OPTIONS.md)**：确认实际部署的 Gateway Monitor Report / Semantic Model（以及预期 PROD 监控需求）是否需要 TotalBytes、TotalRows、MaxIO 三个字段。当前 fork 版本化报表未见直接引用，但不是线上无依赖的证明。
 
-后续选项要待数据语义确定后再选：保留标量但明确有损聚合/取整策略，或另建保留多值/高精度的结构。所有新方案均需重新 Dry-run、Schema、数据准确性和部署前检查。**不能把保留原有 null 描述成全字段修复。**
+- **若当前监控不需要：** 可以评审“限定 P1 验收范围、保留旧 Mashup Function 和已知 null，并将全字段修复列为单独 Backlog”，但**不能静默关闭 GW-001**。
+- **若需要：** 先向 Microsoft Gateway 产品/支持渠道确认数组元素定义、求和/聚合规则和 MaxIO 精度，再决定是否新增明细结构或变更类型。未经定义不能擅自取首元素/求和/取整。
 
-[GW-001/GW-005](tracking/ISSUES.md) · [全部历史进展](tracking/CHANGELOG.md)。
+**暂时不运行任何新 DDL、Schema 变更或重复数值采样，不部署原 Mashup Candidate。**
+
+[问题台账](tracking/ISSUES.md) · [进展记录](tracking/CHANGELOG.md) · [设计选项](docs/MASHUP_DESIGN_OPTIONS.md)。

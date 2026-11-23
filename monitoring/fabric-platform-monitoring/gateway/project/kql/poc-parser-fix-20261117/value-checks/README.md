@@ -41,5 +41,12 @@
 ## 2026-11-20：Mashup Precheck Blocked（已执行）
 
 - 已运行 [3-mashup-additional-metrics.kql](3-mashup-additional-metrics.kql)，三项转换失败：TotalBytes 243/243、TotalRows 34/34、MaxIODataBytesPerSecond 127/127。报告在 [2026-11-20](../../../evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md)。此原查询**已成功执行**，保留以便复现失败基线。
-- **当前下一任务：** [Mashup 数组/小数只读诊断](MASHUP_SHAPE_README.md) 与 [本地 MCP 完整 Prompt](MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)。这三份**新查询未在 KQL 引擎实测**，不得把写入仓库当作完成验证。
+- **当前下一任务：** [Mashup 数组/小数只读诊断](MASHUP_SHAPE_README.md) 与 [本地 MCP 完整 Prompt](MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)。这三份新查询已于 **2026-11-23** 通过本地 MCP 在 POC 执行；04/06 最初语法报错，现已修复 GitHub 并与成功执行的代码一致，不得把写入仓库当作完成验证。
 - 不修改 `candidates/3-parse_MashupEvaluationReport.kql` DDL；`MaxIO` 目标 long 类型、TotalBytes/TotalRows 多元素语义未经确认，不能贸然部署或更改 Schema。
+
+
+## 2026-11-23：Mashup Shape 验证完成
+
+- [Shape Follow-up](../../../evidence/2026-11-23/README.md)：36 Raw 行中 TotalBytes **44/44**、TotalRows **35/35** 元素可转 long；共同出现数组 6/6 长度相等，MaxIO **12/14** 含小数；这些是数据**形状**而非业务定义。
+- KQL **04、06** 的 `floor(x)` 已修正为 `floor(x,1.0)`，这是用户本地 MCP 成功执行过的版本；KQL **05** 原文通过。
+- **下一工作不再重复样本统计**。先看 [Mashup Field Scope/Design](../../../docs/MASHUP_DESIGN_OPTIONS.md)，确认当前报表是否需要三个有问题的指标；旧 Candidate 仍不可部署。

@@ -7,6 +7,7 @@
 | [2026-11-17 基线](2026-11-17/README.md) | 源码 Schema、15 个实际 Function Body、142 行 Schema、Policy 与 Raw 字段清单、MCP Overview JSON / Markdown（脱敏） | 回滚前的定义比对、架构与数据质量审计 |
 | [2026-11-17 Dry-run + Schema + Value](2026-11-17/DRYRUN_RESULTS.md) | 用户的 3 个 Dry-run、3 份 Schema CSV 及一份 Value CSV | Dry-run 3/3、Schema 39/39、13 数值项无丢失/超阈值差异；DataSource 235/235 内容一致；Mashup Kinds/Paths 在本次 Raw 中无对应 Key |
 | [2026-11-20 MCP Preflight](2026-11-20/README.md) | 本地 AI 执行的脱敏结果与独立技术评审，含 Function SHA256 / Policy / Raw-Parsed / failures | 4/4 通过，**只可进入人工 Patch 评审**；额外发现 Mashup TotalBytes、Streaming 缺字段等问题 |
+| [2026-11-23 Mashup Shape](2026-11-23/README.md) | 本地 MCP 的数组长度、元素类型、MaxIO 精度及源码消费者检查，附独立复核 | Shape 验证通过 / Candidate 仍 Blocked；进入范围和语义设计评审 |
 | [历史 POC 测试](../docs/POC_STATUS.md) | 2026-11-12～11-17 多轮测试细节 | 补充历史环境、已知问题和数据流证据 |
 
 - **2026-11-20 Mashup Precheck：** [Blocked 报告和独立评审](2026-11-20/README.md)，TotalBytes 243/243、TotalRows 34/34、MaxIO 127/127 Raw 有值却无法转换，需重新设计；Mashup 仍未部署。

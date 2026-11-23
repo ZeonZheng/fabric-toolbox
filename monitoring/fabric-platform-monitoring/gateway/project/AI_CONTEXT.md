@@ -1,6 +1,6 @@
 # AI / 技术交接说明
 
-> 更新时间：2026-11-20 16:44（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
+> 更新时间：2026-11-23 09:55（Asia/Singapore）。**先读 [项目总览](README.md) → [当前状态](STATUS.md) → [问题清单](tracking/ISSUES.md)**，然后按任务读取相关证据。
 
 ## 固定背景
 
@@ -27,4 +27,4 @@
 4. **改动后**：只更新 [STATUS](STATUS.md)、对应 [ISSUES](tracking/ISSUES.md) 状态，以及 [CHANGELOG](tracking/CHANGELOG.md) 时间记录；需要技术细节才补充 docs/evidence。
 5. **文档语言**：**我们的说明、项目管理、交接用中文**，保留 PowerShell/KQL/字段名称等代码与技术标识原文；上游文件和原始导出不翻译。
 
-**当前交接点（以 STATUS 为准）：** Streaming（32/32）与 Aggregation（7 条新行、2/2 Key）已 POC 功能性通过并同步 fork 正式 KQL Schema。Mashup 尚未部署，2026-11-20 只读 Precheck **Blocked**：TotalBytes 243/243、TotalRows 34/34 为 JSON 数组文本直接转标量失败，MaxIO 127/127 是小数文本直接转 long 失败；这三列旧 Parsed 同样全 null，并非新部署回归。单元素/多元素数组需要**先确认业务含义**，不能擅自 sum/first/max；`long` 目标类型与 MaxIO 小数冲突需决策。下一步让本地 MCP 执行 [数组/数值语义只读 Follow-up](kql/poc-parser-fix-20261117/value-checks/MASHUP_SHAPE_FOLLOWUP_AI_PROMPT.md)，只返回脱敏报告；**禁止 Mashup Function DDL/Schema 变更**。详见 [独立评审](evidence/2026-11-20/MASHUP_PRECHECK_REVIEW.md)。
+**当前交接点（以 STATUS 为准）：** Streaming（32/32）与 Aggregation（7 新行、2/2 Key）POC 功能 Passed。Mashup 原 Candidate 仍 **Blocked/未部署**。2026-11-23 MCP Shape Follow-up 在近 24h Raw 36 条中确认 TotalBytes 44/44、TotalRows 35/35 个数组元素可转 long、同时存在的 6/6 两数组等长，但**没有上游语义定义**；MaxIO 12/14 含小数，目标 long 不支持无损精度。Query 04/06 的单参数 `floor()` 报错已在 GitHub **只读诊断脚本**修复；报告见 [Nov23 证据](evidence/2026-11-23/README.md)。此外工作分支版本化 Gateway Fabric Report、Semantic Model、KQL Dashboard **无问题字段的直接引用**（并不等于已部署/二进制 PBIT/外部下游没有依赖）。**下一步不是再运行 MCP 形状查询，而是先评审 Mashup 字段的业务必要性**，见 [Design Options](docs/MASHUP_DESIGN_OPTIONS.md)，不能擅自决定 SUM/FIRST/小数取整、执行 Mashup DDL 或关闭 GW-001。

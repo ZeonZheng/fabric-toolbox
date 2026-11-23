@@ -67,3 +67,11 @@
 - Aggregation 96 条 Raw、Streaming 139 条 Raw：Legacy Parser 与 Candidate 的 DataSource 规范化值 **235/235 内容完全一致**（`DifferentSerialized=0`）；动态类型分别观察到 `array` 和 `string`。不是仅仅非空率一致。
 - Mashup 103 条 Raw 中 `DataSource` 字段 103/103 非空，值的 JSON 类型为 `string`；`DataSourceKinds` 和 `DataSourcePaths` 均 **0/103** 出现在原始 JSON Key 中。目标表仍保留这些字段但在本次 Candidate 中不推断值，长期数据语义修复属于 [GW-005](../tracking/ISSUES.md)。
 - 只读检查结果：[CSV](../evidence/2026-11-17/DataSourceCheck-LegacyVsCandidate.csv)。**三个候选的 Dry-run、Schema、数值和适用的 DataSource 等价检查已通过；现场 Function 仍未修改。** 接下来应确认当前部署/Policy 没有漂移，再安排受控 POC 修改。
+
+
+## 2026-11-23：Mashup 数组与小数新证据
+
+- [Nov23 Shape Follow-up](../evidence/2026-11-23/MASHUP_SHAPE_FOLLOWUP_REVIEW.md)：TotalBytes 44/44、TotalRows 35/35 数组内元素可转 long；同现 6/6 数组等长，不代表元素业务上可求和/按 index 匹配。MaxIO 12/14 含小数，目标 long 不可保真。
+- 之前 Mashup `17/17 Schema Check` 只验证 Candidate 投影列结构，**不保证** TotalBytes/Rows/MaxIO 的数值语义；候选 DDL 仍被禁止，现场 Function 仍旧版。
+- 经 GitHub fork 的 Fabric Report、Semantic Model TMDL、KQL Dashboard 可读源码检查，暂未发现这三个字段的直接引用；这不证明已部署报表/二进制 PBIT 或外部消费者不依赖。
+- 后续 [业务范围与技术设计评审](MASHUP_DESIGN_OPTIONS.md) 替代反复的 Raw 数值统计；是否将这三字段纳入 P1 必须是明确的范围决定。
